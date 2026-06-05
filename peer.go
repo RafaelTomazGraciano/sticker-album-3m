@@ -23,6 +23,11 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	listenPeer(conn, "")
 }
 
+func onNewPeerConnected(conn *websocket.Conn) {
+    sendNeighborList(conn)
+    helloToNeighbors(conn)
+}
+
 func listenPeer(conn *websocket.Conn, addr string) {
     defer conn.Close()
 
@@ -61,11 +66,6 @@ func handleDisconnect(addr string) {
     }
 }
 
-func onNewPeerConnected(conn *websocket.Conn) {
-    sendNeighborList(conn)
-    helloToNeighbors(conn)
-}
-
 func connectToPeer(addr string) {
     conn, _, err := websocket.DefaultDialer.Dial(addr, nil)
     if err != nil {
@@ -73,10 +73,6 @@ func connectToPeer(addr string) {
         return
     }
     fmt.Printf("Conectado em %s\n", addr)
-
-    node.mu.Lock()
-    node.Neighbors[addr] = &PeerConn{Addr: addr, Conn: conn}
-    node.mu.Unlock()
 
     listenPeer(conn, addr)
 }

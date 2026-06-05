@@ -17,3 +17,22 @@ Para executar o projeto, utilize o comando abaixo, substituindo `ID` pelo seu n√
    go run . -id ID -peer IP
 ```
 
+## Testes
+
+Para executar os testes, abra um terminal e execute o comando abaixo:
+
+```bash
+go run . -id 23
+```
+
+Abra outro terminal e execute o comando abaixo:
+
+```bash
+go run . -id 5 -peer 127.0.0.1
+```
+
+Fa√ßa uma busca pela figurinha 23:
+
+```bash
+search FIG-23
+```

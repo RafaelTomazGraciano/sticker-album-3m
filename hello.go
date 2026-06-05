@@ -52,11 +52,19 @@ func helloToNeighbors(newConn *websocket.Conn) {
 
 func handleHello(conn *websocket.Conn, msg Message) {
     node.mu.Lock()
+	
+    // salva o peer que enviou o HELLO como vizinho com ID correto
+    node.Neighbors[msg.SenderPeerID] = &PeerConn{
+        PeerID: msg.SenderPeerID,
+        Conn:   conn,
+    }
+
+    // salva os endereços recebidos como backup
     for _, addr := range msg.Peers {
         node.KnownPeers = append(node.KnownPeers, addr)
     }
     node.mu.Unlock()
 
-    fmt.Printf("Backup de peers recebido: %v\n", msg.Peers)
+    fmt.Printf("Peer %s registrado. Backup recebido: %v\n", msg.SenderPeerID, msg.Peers)
 }
 

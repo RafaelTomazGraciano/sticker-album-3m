@@ -31,7 +31,7 @@ type Message struct {
     SenderPeerID string `json:"sender_peer_id"`
     ReceiverPeerID string `json:"receiver_peer_id,omitempty"`
     QueryID string `json:"query_id,omitempty"`
-    TTL int `json:"ttl,omitempty"`
+    TTL int `json:"ttl"`
     StickerID string `json:"sticker_id,omitempty"`
     OfferSticker string `json:"offer_sticker_id,omitempty"`
     WantSticker string `json:"want_sticker_id,omitempty"`

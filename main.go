@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -40,9 +43,68 @@ func main(){
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
-	fmt.Println("WebSocket server started on port 8080")
-	err := http.ListenAndServe(":8080", nil)
+	port := findAvailablePort()
+	//fmt.Printf("Nó %s iniciado na porta 8080\n", peerID)
+	fmt.Printf("Nó %s iniciado na porta %d\n", peerID, port)
+
+	go inputLoop()	
+
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	//err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		fmt.Println("Error starting server:", err)
+		fmt.Println("Erro ao iniciar servidor:", err)
 	}
+}
+
+// apenas para testes. Remover no futuro
+func findAvailablePort() int {
+    for port := 8080; port <= 8090; port++ {
+        ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+        if err == nil {
+            ln.Close()
+            return port
+        }
+    }
+    fmt.Println("Nenhuma porta disponível entre 8080 e 8090")
+    os.Exit(1)
+    return 0
+}
+
+func inputLoop() {
+    scanner := bufio.NewScanner(os.Stdin)
+    fmt.Println("Comandos disponíveis:")
+    fmt.Println("  search <FIG-XX>   → buscar uma figurinha")
+    fmt.Println("  list              → ver seu inventário")
+
+    for {
+        fmt.Print("> ")
+        if !scanner.Scan() {
+            break
+        }
+        line := strings.TrimSpace(scanner.Text())
+        parts := strings.Fields(line)
+        if len(parts) == 0 {
+            continue
+        }
+
+        switch parts[0] {
+        case "search":
+            if len(parts) < 2 {
+                fmt.Println("Uso: search <FIG-XX>")
+                continue
+            }
+            startSearch(parts[1])
+
+        case "list":
+            node.mu.RLock()
+            fmt.Println("Seu inventário:")
+            for sticker, qty := range node.Inventory {
+                fmt.Printf("  %s: %d\n", sticker, qty)
+            }
+            node.mu.RUnlock()
+
+        default:
+            fmt.Printf("Comando desconhecido: %s\n", parts[0])
+        }
+    }
 }
