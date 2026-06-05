@@ -11,7 +11,9 @@ Sincronize as dependências do projeto:
 ```bash
 go mod tidy
 ```
+Para executar o projeto, utilize o comando abaixo, substituindo `ID` pelo seu número na lista de chamada e `IP` pelo endereço IP de um nó já existente na rede:
 
 ```bash
-   go run .
+   go run . -id ID -peer IP
 ```
+
