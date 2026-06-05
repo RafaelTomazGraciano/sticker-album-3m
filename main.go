@@ -21,10 +21,11 @@ func main(){
 	idAluno := *idPtr
 	peerID := fmt.Sprintf("ALUNO-%02d", idAluno)
 	stickerID := fmt.Sprintf("FIG-%02d", idAluno)
+	fmt.Printf("Peer: %s, Sticker: %s\n", peerID, stickerID)
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
-	fmt.Println("WebSocket server started on :8080")
+	fmt.Println("WebSocket server started on port 8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
