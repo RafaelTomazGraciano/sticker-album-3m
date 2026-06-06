@@ -72,7 +72,7 @@ func broadcast(msg Message, except *websocket.Conn) {
     }
 }
 
-func handleSearchHit(msg Message) {
+func handleSearchHit(conn *websocket.Conn, msg Message) {
     fmt.Printf("Figurinha %s encontrada em %s!\n", msg.StickerID, msg.SenderPeerID)
 }
 

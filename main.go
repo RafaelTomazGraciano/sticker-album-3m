@@ -34,10 +34,12 @@ func main(){
 		Neighbors:   make(map[string]*PeerConn),
 		KnownPeers:  []string{},
 		SeenQueries: make(map[string]time.Time),
+		SearchResults: make(map[string]*PeerConn),
 	}
 
 	if *peerIP != "" {
-		addr := fmt.Sprintf("ws://%s:8080/ws", *peerIP)
+		addr := fmt.Sprintf("ws://%s/ws", *peerIP) //Para teste, REMOVER
+		//addr := fmt.Sprintf("ws://%s:8080/ws", *peerIP)
 		go connectToPeer(addr)
 	}
 

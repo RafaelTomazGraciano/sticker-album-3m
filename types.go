@@ -21,6 +21,7 @@ type Peer struct {
 	Neighbors map[string]*PeerConn
 	KnownPeers []string
 	SeenQueries map[string]time.Time
+	SearchResults map[string]*PeerConn
 	mu sync.RWMutex
 }
 
