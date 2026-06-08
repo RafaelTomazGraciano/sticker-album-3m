@@ -38,3 +38,7 @@ type Message struct {
     WantSticker string `json:"want_sticker_id,omitempty"`
 	Peers []string `json:"peers,omitempty"` 
 }
+
+type Album struct {
+	Stickers map[int]int `json:"stickers"`
+}

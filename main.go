@@ -43,6 +43,8 @@ func main(){
 		go connectToPeer(addr)
 	}
 
+	initializeInventory(*idPtr)
+
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
 	port := findAvailablePort()
@@ -75,8 +77,8 @@ func findAvailablePort() int {
 func inputLoop() {
     scanner := bufio.NewScanner(os.Stdin)
     fmt.Println("Comandos disponíveis:")
-    fmt.Println("  search <FIG-XX>   → buscar uma figurinha")
-    fmt.Println("  list              → ver seu inventário")
+    fmt.Println("  search <FIG-XX>   -> buscar uma figurinha")
+    fmt.Println("  list              -> ver seu inventário")
 
     for {
         fmt.Print("> ")
