@@ -7,8 +7,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var node *Peer
-
 type PeerConn struct {
 	PeerID string
 	Addr   string

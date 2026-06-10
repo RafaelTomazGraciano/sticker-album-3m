@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-const inventoryFile = "inventory.json"
-
-var inventory Album
-
 func initializeInventory(figNumber int) {
 	file, err := os.Open(inventoryFile)
 	if err != nil {
@@ -38,6 +34,7 @@ func updateInventory(recievedSticker, sentSticker string) {
 	}
 
 	inventory.Stickers[sentSticker]--
+	saveInventoryFile()
 }
 
 func saveInventoryFile() {

@@ -78,6 +78,9 @@ func inputLoop() {
     scanner := bufio.NewScanner(os.Stdin)
     fmt.Println("Comandos disponíveis:")
     fmt.Println("  search <FIG-XX>   -> buscar uma figurinha")
+	fmt.Println("  offer <FIG-XX>    -> oferece uma figurinha sua para troca")
+	fmt.Println("  accept            -> aceita a troca entre figurinhas")
+	fmt.Println("  reject            -> rejeita a troca entre figurinhas")
     fmt.Println("  list              -> ver seu inventário")
 
     for {
@@ -96,8 +99,19 @@ func inputLoop() {
             if len(parts) < 2 {
                 fmt.Println("Uso: search <FIG-XX>")
                 continue
-            }
-            startSearch(parts[1])
+            } else {
+				wantSticker = parts[1]
+            	startSearch()
+			}
+		
+		case "offer":
+			if len(parts) < 2 {
+				// TODO: verificar se voce tem a figurinha
+				fmt.Println("Uso: offer <FIG-XX>")
+			} else{
+				offerSticker = parts[1]
+				startTradeOffer()
+			}
 
         case "list":
             node.mu.RLock()
