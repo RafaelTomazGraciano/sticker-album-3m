@@ -1,38 +1,56 @@
 package main
 
-import(
+import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"encoding/json"
-	"type"
 )
 
 const inventoryFile = "inventory.json"
-var inventory Album = {};
 
-func initializeInventory(figNumber int){
+var inventory Album
+
+func initializeInventory(figNumber int) {
 	file, err := os.Open(inventoryFile)
 	if err != nil {
 		fmt.Println("Erro ao ler o arquivo inventory.json. Criando um inventário limpo")
-		file, e := os.Create(inventoryFile)
+		_, e := os.Create(inventoryFile)
 		if e != nil {
 			fmt.Println("Falha ao criar o inventário: %s", e)
 			os.Exit(1)
 		}
-	} 
-	//TODO: ler o json e salvar no inventory
+	}
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&inventory)
+	if err != nil {
+		fmt.Println("Erro ao ler o json")
+	}
+	fmt.Println(inventory)
 
 	defer file.Close()
 }
 
-func updateInventory(recievedSticker, sentSticker string){
-	
+func updateInventory(recievedSticker, sentSticker string) {
+	if _, ok := inventory.Stickers[recievedSticker]; !ok {
+		inventory.Stickers[recievedSticker] = 1
+	} else {
+		inventory.Stickers[recievedSticker]++
+	}
+
+	inventory.Stickers[sentSticker]--
 }
 
-func saveInventoryFile(){
-	bytesWritten, err := file.WriteString(inventory)
+func saveInventoryFile() {
+	file, err := os.Open(inventoryFile)
 	if err != nil {
-		fmt.Println("Falha ao escrever no arquivo: %s", err)
-		os.Exit(1)
+		fmt.Println("Erro ao ler o arquivo inventory.json. Razão: ", err)
 	}
+	decoder := json.NewEncoder(file)
+	err = decoder.Encode(&inventory)
+	if err != nil {
+		fmt.Println("Erro ao codificar o json")
+	}
+	fmt.Println(inventory)
+
+	defer file.Close()
 }

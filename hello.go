@@ -33,7 +33,7 @@ func helloToNeighbors(newConn *websocket.Conn) {
     defer node.mu.RUnlock()
 
     msg := Message{
-        Type:         "HELLO",
+        Type: "HELLO",
         SenderPeerID: node.ID,
     }
 
