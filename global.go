@@ -12,6 +12,9 @@ var peerToTrade string
 var inventory Album
 const inventoryFile = "inventory.json"
 
+// canal para o inputLoop comunicar a decisao de accept/reject ao handleTradeOffer
+var tradeDecision = make(chan string, 1)
+
 
 func getLocalIP() string {
     conn, err := net.Dial("udp", "8.8.8.8:80")

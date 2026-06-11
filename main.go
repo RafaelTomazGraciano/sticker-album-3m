@@ -108,11 +108,24 @@ func inputLoop() {
 		
 		case "offer":
 			if len(parts) < 2 {
-				// TODO: verificar se voce tem a figurinha
 				fmt.Println("Uso: offer <FIG-XX>")
-			} else{
-				offerSticker = parts[1]
-				startTradeOffer()
+				continue
+			}
+			offerSticker = parts[1]
+			startTradeOffer()
+		
+		case "accept":
+			select {
+			case tradeDecision <- "accept":
+			default:
+				fmt.Println("Nenhuma proposta de troca pendente.")
+			}
+
+		case "reject":
+			select {
+			case tradeDecision <- "reject":
+			default:
+				fmt.Println("Nenhuma proposta de troca pendente.")
 			}
 
         case "list":
