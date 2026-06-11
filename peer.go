@@ -12,15 +12,22 @@ var upgrader = websocket.Upgrader {
 	},
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		fmt.Println("Error upgrade:", err)
-		return
-	}
+// map auxiliar: conn -> addr, para o handleHello conseguir preencher o Addr
+var connAddr = make(map[*websocket.Conn]string)
 
-	onNewPeerConnected(conn)
-	listenPeer(conn, "")
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        fmt.Println("Error upgrade:", err)
+        return
+    }
+
+    // pega o IP de quem conectou (formato "IP:porta")
+    addr := r.RemoteAddr
+    connAddr[conn] = addr
+
+    onNewPeerConnected(conn)
+    listenPeer(conn, addr)
 }
 
 func onNewPeerConnected(conn *websocket.Conn) {
@@ -73,6 +80,8 @@ func connectToPeer(addr string) {
         return
     }
     fmt.Printf("Conectado em %s\n", addr)
+
+    connAddr[conn] = addr // guarda antes do HELLO chegar
 
     listenPeer(conn, addr)
 }
