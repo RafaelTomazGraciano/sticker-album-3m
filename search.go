@@ -14,6 +14,7 @@ func startSearch() {
 		Type:         "SEARCH",
 		MessageID:    uuid.NewString(),
 		OriginPeerID: node.ID,
+		OriginPeerIP: getLocalIP(),
 		SenderPeerID: node.ID,
 		QueryID:      uuid.NewString(),
 		TTL:          7,
@@ -44,10 +45,11 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 	qty := node.Inventory[msg.StickerID]
 	node.mu.RUnlock()
 
-	// TODO: se não está na lista se conecta para se tornar um vizinho, se for vizinho envia search hit
+	// tenta se conectar para virar vizinho
 	if qty > 0 {
 		if _, ok := node.Neighbors[msg.OriginPeerID]; !ok {
-            connectToPeer(msg.)
+			addr := fmt.Sprintf("ws://%s:8080/ws", msg.OriginPeerIP)
+			go connectToPeer(addr)
 		} else {
 			sendSearchHit(conn, msg)
 		}

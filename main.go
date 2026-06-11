@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// TODO: após o usuário fazer uma escolha, tipo search, offer, etc. espera 5 segundos, caso não receba a resposta envia de novo e espera 10 segundos
+// caso nao receba ainda, entao envia mais uma vez e espera 15 segundos, e caso nao receba nenhuma mensagem entao printa que nao recebeu uma respota e entao o usuario pode fazer uma nova acao
 func main(){
 	// Flags
 	idPtr := flag.Int("id", 0, "ID númerico do aluno") 

@@ -1,53 +1,51 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
+    "encoding/json"
+    "fmt"
+    "os"
 )
 
 func initializeInventory(figNumber int) {
-	file, err := os.Open(inventoryFile)
-	if err != nil {
-		fmt.Println("Erro ao ler o arquivo inventory.json. Criando um inventário limpo")
-		_, e := os.Create(inventoryFile)
-		if e != nil {
-			fmt.Println("Falha ao criar o inventário: %s", e)
-			os.Exit(1)
-		}
-	}
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&inventory)
-	if err != nil {
-		fmt.Println("Erro ao ler o json")
-	}
-	fmt.Println(inventory)
+    file, err := os.Open(inventoryFile)
+    if err != nil {
+        // arquivo não existe: inicializa com a figurinha do aluno
+        fmt.Println("inventory.json não encontrado. Criando inventário inicial.")
+        inventory = Album{
+            Stickers: map[string]int{
+                fmt.Sprintf("FIG-%02d", figNumber): 28,
+            },
+        }
+        saveInventoryFile()
+        return
+    }
+    defer file.Close()
 
-	defer file.Close()
+    if err := json.NewDecoder(file).Decode(&inventory); err != nil {
+        fmt.Println("Erro ao ler inventory.json:", err)
+        os.Exit(1)
+    }
+
+    fmt.Println("Inventário carregado:", inventory.Stickers)
 }
 
-func updateInventory(recievedSticker, sentSticker string) {
-	if _, ok := inventory.Stickers[recievedSticker]; !ok {
-		inventory.Stickers[recievedSticker] = 1
-	} else {
-		inventory.Stickers[recievedSticker]++
-	}
-
-	inventory.Stickers[sentSticker]--
-	saveInventoryFile()
+func updateInventory(receivedSticker, sentSticker string) {
+    inventory.Stickers[receivedSticker]++
+    inventory.Stickers[sentSticker]--
+    saveInventoryFile()
 }
 
 func saveInventoryFile() {
-	file, err := os.Open(inventoryFile)
-	if err != nil {
-		fmt.Println("Erro ao ler o arquivo inventory.json. Razão: ", err)
-	}
-	decoder := json.NewEncoder(file)
-	err = decoder.Encode(&inventory)
-	if err != nil {
-		fmt.Println("Erro ao codificar o json")
-	}
-	fmt.Println(inventory)
+    file, err := os.Create(inventoryFile) // Create trunca e recria o arquivo
+    if err != nil {
+        fmt.Println("Erro ao abrir inventory.json para escrita:", err)
+        return
+    }
+    defer file.Close()
 
-	defer file.Close()
+    encoder := json.NewEncoder(file)
+    encoder.SetIndent("", "  ")
+    if err := encoder.Encode(&inventory); err != nil {
+        fmt.Println("Erro ao salvar inventory.json:", err)
+    }
 }
