@@ -74,6 +74,10 @@ func handleDisconnect(addr string) {
 }
 
 func connectToPeer(addr string) {
+    connectToPeerAndDo(addr, nil)
+}
+
+func connectToPeerAndDo(addr string, onConnected func(*websocket.Conn)) {
     conn, _, err := websocket.DefaultDialer.Dial(addr, nil)
     if err != nil {
         fmt.Printf("Erro ao conectar em %s: %v\n", addr, err)
@@ -82,6 +86,10 @@ func connectToPeer(addr string) {
     fmt.Printf("Conectado em %s\n", addr)
 
     connAddr[conn] = addr // guarda antes do HELLO chegar
+
+    if onConnected != nil {
+        onConnected(conn)
+    }
 
     listenPeer(conn, addr)
 }

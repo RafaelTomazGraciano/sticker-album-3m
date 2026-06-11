@@ -43,17 +43,21 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 	// tenho a figurinha?
 	node.mu.RLock()
 	qty := node.Inventory[msg.StickerID]
+	_, jaEVizinho := node.Neighbors[msg.OriginPeerID]
 	node.mu.RUnlock()
 
-	// tenta se conectar para virar vizinho
 	if qty > 0 {
-		if _, ok := node.Neighbors[msg.OriginPeerID]; !ok {
-			addr := fmt.Sprintf("ws://%s:8080/ws", msg.OriginPeerIP)
-			go connectToPeer(addr)
-		} else {
-			sendSearchHit(conn, msg)
-		}
-	}
+        if jaEVizinho {
+            sendSearchHit(conn, msg)
+        } else {
+            // origin nao e vizinho. Conecta primeiro, depois envia o hit pela nova conexao
+            addr := fmt.Sprintf("ws://%s:8080/ws", msg.OriginPeerIP)
+            originalMsg := msg
+            go connectToPeerAndDo(addr, func(newConn *websocket.Conn) {
+                sendSearchHit(newConn, originalMsg)
+            })
+        }
+    }
 
 	// ainda tem TTL para repassar?
 	if msg.TTL > 1 {
@@ -81,12 +85,39 @@ func broadcast(msg Message, except *websocket.Conn) {
 }
 
 func handleSearchHit(conn *websocket.Conn, msg Message) {
-	peerToTrade = msg.SenderPeerID
-	fmt.Printf("Figurinha %s encontrada em %s!\n", msg.StickerID, msg.SenderPeerID)
+    // sou o destino?
+    if msg.ReceiverPeerID == node.ID {
+        // armazena quem tem a figurinha para usar no trade depois
+        node.mu.Lock()
+        node.SearchResults[msg.StickerID] = &PeerConn{
+            PeerID: msg.SenderPeerID,
+            Conn:   conn,
+        }
+        peerToTrade = msg.SenderPeerID
+        node.mu.Unlock()
 
-    //TODO:
-    //1. Se eu não sou o alvo do search hit devo passar para os próximos
-    //2. Se eu sou o alvo, eu devo ser capaz de armazenar o ID de quem tem, para isso devo saber se o ip que mando
+        fmt.Printf("Figurinha %s encontrada em %s!\n", msg.StickerID, msg.SenderPeerID)
+        fmt.Printf("Use 'offer <FIG-XX>' para propor uma troca.\n")
+        return
+    }
+
+    // nao sou o destino, roteia para o vizinho correto
+    node.mu.RLock()
+    dest, ok := node.Neighbors[msg.ReceiverPeerID]
+    node.mu.RUnlock()
+
+    if !ok {
+        fmt.Printf("SEARCH_HIT: destino %s não é vizinho, não consigo rotear\n", msg.ReceiverPeerID)
+        return
+    }
+
+    msg.SenderPeerID = node.ID
+    data, err := json.Marshal(msg)
+    if err != nil {
+        fmt.Println("Erro ao serializar SEARCH_HIT no roteamento:", err)
+        return
+    }
+    dest.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
 func sendSearchHit(conn *websocket.Conn, original Message) {
