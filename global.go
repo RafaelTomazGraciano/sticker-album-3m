@@ -1,5 +1,7 @@
 package main
 
+import "net"
+
 var node *Peer
 
 var wantSticker string
