@@ -1,6 +1,7 @@
 package main
 
 import (
+    "strings"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 )
@@ -9,7 +10,9 @@ func sendNeighborList(conn *websocket.Conn) {
     node.mu.RLock()
     neighbors := make([]string, 0, len(node.Neighbors))
     for _, pc := range node.Neighbors {
-        neighbors = append(neighbors, pc.Addr)
+        if strings.HasPrefix(pc.Addr, "ws://") {
+            neighbors = append(neighbors, pc.Addr)
+        }
     }
     node.mu.RUnlock()
 

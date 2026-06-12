@@ -51,20 +51,17 @@ func main(){
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
-	port := findAvailablePort()
-	//printSystem("Nó %s iniciado na porta 8080\n", peerID)
-	printSystem("Nó %s iniciado na porta %d", peerID, port)
+	serverPort = findAvailablePort()
+	printSystem("Nó %s iniciado na porta %d", peerID, serverPort)
 
 	go inputLoop()	
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-	//err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", serverPort), nil)
 	if err != nil {
 		printError("Erro ao iniciar servidor: %v", err)
 	}
 }
 
-// apenas para testes. Remover no futuro
 func findAvailablePort() int {
     for port := 8080; port <= 8090; port++ {
         ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
