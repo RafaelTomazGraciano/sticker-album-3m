@@ -15,7 +15,7 @@ func startTradeOffer() {
     node.mu.RUnlock()
 
     if qty <= 0 {
-        fmt.Printf("Você não possui '%s' para oferecer.\n", offerSticker)
+        printWarning("Você não possui '%s' para oferecer", offerSticker)
         return
     }
 
@@ -31,16 +31,16 @@ func startTradeOffer() {
 
     data, err := json.Marshal(msgTrade)
     if err != nil {
-        fmt.Println("Erro ao serializar TRADE_OFFER:", err)
+        printError("Erro ao serializar TRADE_OFFER: %v", err)
         return
     }
 
     if temConexaoDireta {
         result.Conn.WriteMessage(websocket.TextMessage, data)
-        fmt.Printf("Oferta enviada diretamente para %s.\n", peerToTrade)
+        printInfo("Oferta enviada diretamente para %s", peerToTrade)
     } else {
         broadcast(msgTrade, nil)
-        fmt.Printf("Oferta enviada por broadcast para %s.\n", peerToTrade)
+        printInfo("Oferta enviada por broadcast para %s", peerToTrade)
     }
 }
 
@@ -50,16 +50,16 @@ func handleTradeOffer(conn *websocket.Conn, msg Message) {
     node.mu.RUnlock()
 
     if qty <= 0 {
-        fmt.Printf("Proposta de %s recebida, mas você não possui '%s'. Rejeitando automaticamente.\n", msg.OriginPeerID, msg.WantSticker)
+        printWarning("Proposta de %s recebida, mas você não possui '%s'. Rejeitando automaticamente", msg.OriginPeerID, msg.WantSticker)
         sendTradeReject(conn, msg)
         return
     }
 
-    fmt.Printf("\n--- PROPOSTA DE TROCA ---\n")
-    fmt.Printf("  De:      %s\n", msg.OriginPeerID)
-    fmt.Printf("  Oferece: %s\n", msg.OfferSticker)
-    fmt.Printf("  Quer:    %s\n", msg.WantSticker)
-    fmt.Printf("  Digite 'accept' para aceitar ou 'reject' para recusar.\n")
+    printWarning("\n--- PROPOSTA DE TROCA ---")
+    printWarning(" De: %s", msg.OriginPeerID)
+    printWarning(" Oferece: %s", msg.OfferSticker)
+    printWarning(" Quer: %s", msg.WantSticker)
+    printWarning(" Digite 'accept' para aceitar ou 'reject' para recusar")
     fmt.Print("> ")
 
     select {
@@ -70,8 +70,9 @@ func handleTradeOffer(conn *websocket.Conn, msg Message) {
             sendTradeReject(conn, msg)
         }
     case <-time.After(30 * time.Second):
-        fmt.Println("Tempo esgotado. Rejeitando proposta automaticamente.")
+        printWarning("Tempo esgotado. Rejeitando proposta automaticamente")
         sendTradeReject(conn, msg)
+		printMenu()
     }
 }
 
@@ -87,7 +88,7 @@ func sendTradeAccept(conn *websocket.Conn, original Message) {
     }
     data, _ := json.Marshal(msg)
     conn.WriteMessage(websocket.TextMessage, data)
-    fmt.Printf("Troca aceita com %s.\n", original.OriginPeerID)
+    printSuccess("Troca aceita com %s.", original.OriginPeerID)
 }
 
 func sendTradeReject(conn *websocket.Conn, original Message) {
@@ -102,11 +103,11 @@ func sendTradeReject(conn *websocket.Conn, original Message) {
     }
     data, _ := json.Marshal(msg)
     conn.WriteMessage(websocket.TextMessage, data)
-    fmt.Printf("Troca recusada.\n")
+    printError("Troca recusada")
 }
 
 func handleTradeAccept(conn *websocket.Conn, msg Message) {
-	fmt.Printf("\n%s aceitou a troca! Confirmando transferência...\n", msg.OriginPeerID)
+	printSuccess("%s aceitou a troca! Confirmando transferência...", msg.OriginPeerID)
 
     // envia CONFIRM
     confirm := Message{
@@ -121,21 +122,21 @@ func handleTradeAccept(conn *websocket.Conn, msg Message) {
 
     data, err := json.Marshal(confirm)
     if err != nil {
-        fmt.Println("Erro ao serializar TRANSFER_CONFIRM:", err)
+        printError("Erro ao serializar TRANSFER_CONFIRM: %v", err)
         return
     }
     conn.WriteMessage(websocket.TextMessage, data)
 
     // atualiza o inventario
     updateInventory(msg.WantSticker, msg.OfferSticker)
-    fmt.Printf("Inventário atualizado: +%s / -%s\n", msg.WantSticker, msg.OfferSticker)
+    printSuccess("Inventário atualizado: +%s / -%s", msg.WantSticker, msg.OfferSticker)
 }
 
 func handleTradeReject(conn *websocket.Conn, msg Message) {
-	fmt.Printf("\n%s recusou a troca.\n", msg.OriginPeerID)
+	printError("%s recusou a troca", msg.OriginPeerID)
 }
 
 func handleTransferConfirm(conn *websocket.Conn, msg Message) {
 	updateInventory(msg.OfferSticker, msg.WantSticker)
-    fmt.Printf("Transferência confirmada! +%s / -%s\n", msg.OfferSticker, msg.WantSticker)
+    printSuccess("Transferência confirmada! +%s / -%s", msg.OfferSticker, msg.WantSticker)
 }

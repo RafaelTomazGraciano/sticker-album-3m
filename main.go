@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-// TODO: após o usuário fazer uma escolha, tipo search, offer, etc. espera 5 segundos, caso não receba a resposta envia de novo e espera 10 segundos
-// caso nao receba ainda, entao envia mais uma vez e espera 15 segundos, e caso nao receba nenhuma mensagem entao printa que nao recebeu uma respota e entao o usuario pode fazer uma nova acao
 func main(){
 	// Flags
 	idPtr := flag.Int("id", 0, "ID númerico do aluno") 
@@ -20,10 +18,13 @@ func main(){
 	flag.Parse()
 
 	if *idPtr <= 0 {
-		fmt.Println("Erro: Você precisa informar um ID de aluno válido e maior que zero.")
-		fmt.Println("Use o parâmetro -id. Exemplo: go run . -id 5")
+		printError("Erro: Você precisa informar um ID de aluno válido e maior que zero.")
+		printError("Use o parâmetro -id. Exemplo: go run . -id 5")
 		os.Exit(1)
 	}
+
+	localIP = getLocalIP()
+	printInfo("Seu IP é: %s", localIP)
 
 	peerID := fmt.Sprintf("ALUNO-%02d", *idPtr)
 	stickerID := fmt.Sprintf("FIG-%02d", *idPtr)
@@ -50,15 +51,15 @@ func main(){
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
 	port := findAvailablePort()
-	//fmt.Printf("Nó %s iniciado na porta 8080\n", peerID)
-	fmt.Printf("Nó %s iniciado na porta %d\n", peerID, port)
+	//printSystem("Nó %s iniciado na porta 8080\n", peerID)
+	printSystem("Nó %s iniciado na porta %d", peerID, port)
 
 	go inputLoop()	
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	//err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		fmt.Println("Erro ao iniciar servidor:", err)
+		printError("Erro ao iniciar servidor: %v", err)
 	}
 }
 
@@ -71,22 +72,16 @@ func findAvailablePort() int {
             return port
         }
     }
-    fmt.Println("Nenhuma porta disponível entre 8080 e 8090")
+    printError("Nenhuma porta disponível entre 8080 e 8090")
     os.Exit(1)
     return 0
 }
 
 func inputLoop() {
     scanner := bufio.NewScanner(os.Stdin)
-    fmt.Println("Comandos disponíveis:")
-    fmt.Println("  search <FIG-XX>   -> buscar uma figurinha")
-	fmt.Println("  offer <FIG-XX>    -> oferece uma figurinha sua para troca")
-	fmt.Println("  accept            -> aceita a troca entre figurinhas")
-	fmt.Println("  reject            -> rejeita a troca entre figurinhas")
-    fmt.Println("  list              -> ver seu inventário")
+    printMenu()
 
     for {
-        fmt.Print("> ")
         if !scanner.Scan() {
             break
         }
@@ -99,16 +94,15 @@ func inputLoop() {
         switch parts[0] {
         case "search":
             if len(parts) < 2 {
-                fmt.Println("Uso: search <FIG-XX>")
+                printWarning("Uso: search <FIG-XX>")
                 continue
-            } else {
-				wantSticker = parts[1]
-            	startSearch()
-			}
+            }
+			wantSticker = parts[1]
+        	go searchWithRetry()
 		
 		case "offer":
 			if len(parts) < 2 {
-				fmt.Println("Uso: offer <FIG-XX>")
+				printWarning("Uso: offer <FIG-XX>")
 				continue
 			}
 			offerSticker = parts[1]
@@ -118,26 +112,26 @@ func inputLoop() {
 			select {
 			case tradeDecision <- "accept":
 			default:
-				fmt.Println("Nenhuma proposta de troca pendente.")
+				printWarning("Nenhuma proposta de troca pendente")
 			}
 
 		case "reject":
 			select {
 			case tradeDecision <- "reject":
 			default:
-				fmt.Println("Nenhuma proposta de troca pendente.")
+				printWarning("Nenhuma proposta de troca pendente")
 			}
 
         case "list":
             node.mu.RLock()
-            fmt.Println("Seu inventário:")
+            printInfo("Seu inventário:")
             for sticker, qty := range node.Inventory {
-                fmt.Printf("  %s: %d\n", sticker, qty)
+                printInfo(" %s: %d", sticker, qty)
             }
             node.mu.RUnlock()
 
         default:
-            fmt.Printf("Comando desconhecido: %s\n", parts[0])
+            printWarning("Comando desconhecido: %s", parts[0])
         }
     }
 }

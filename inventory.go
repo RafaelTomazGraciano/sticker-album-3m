@@ -10,7 +10,7 @@ func initializeInventory(figNumber int) {
     file, err := os.Open(inventoryFile)
     if err != nil {
         // arquivo não existe: inicializa com a figurinha do aluno
-        fmt.Println("inventory.json não encontrado. Criando inventário inicial.")
+        printSystem("inventory.json não encontrado. Criando inventário inicial")
         inventory = Album{
             Stickers: map[string]int{
                 fmt.Sprintf("FIG-%02d", figNumber): 28,
@@ -22,11 +22,11 @@ func initializeInventory(figNumber int) {
     defer file.Close()
 
     if err := json.NewDecoder(file).Decode(&inventory); err != nil {
-        fmt.Println("Erro ao ler inventory.json:", err)
+        printError("Erro ao ler inventory.json: %v", err)
         os.Exit(1)
     }
 
-    fmt.Println("Inventário carregado:", inventory.Stickers)
+    printSystem("Inventário carregado: %v", inventory.Stickers)
 }
 
 func updateInventory(receivedSticker, sentSticker string) {
@@ -38,7 +38,7 @@ func updateInventory(receivedSticker, sentSticker string) {
 func saveInventoryFile() {
     file, err := os.Create(inventoryFile) // Create trunca e recria o arquivo
     if err != nil {
-        fmt.Println("Erro ao abrir inventory.json para escrita:", err)
+        printError("Erro ao abrir inventory.json para escrita: %v", err)
         return
     }
     defer file.Close()
@@ -46,6 +46,6 @@ func saveInventoryFile() {
     encoder := json.NewEncoder(file)
     encoder.SetIndent("", "  ")
     if err := encoder.Encode(&inventory); err != nil {
-        fmt.Println("Erro ao salvar inventory.json:", err)
+        printError("Erro ao salvar inventory.json: %v", err)
     }
 }

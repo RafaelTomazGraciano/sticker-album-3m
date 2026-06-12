@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"github.com/gorilla/websocket"
 )
@@ -18,7 +17,7 @@ var connAddr = make(map[*websocket.Conn]string)
 func wsHandler(w http.ResponseWriter, r *http.Request) {
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
-        fmt.Println("Error upgrade:", err)
+        printError("Error upgrade: %v", err)
         return
     }
 
@@ -41,7 +40,7 @@ func listenPeer(conn *websocket.Conn, addr string) {
     for {
         _, raw, err := conn.ReadMessage()
         if err != nil {
-            fmt.Printf("Peer %s desconectou\n", addr)
+            printSystem("Peer %s desconectou", addr)
             handleDisconnect(addr)
             return
         }
@@ -62,14 +61,14 @@ func handleDisconnect(addr string) {
     node.mu.Unlock()
 
     if semVizinhos {
-        fmt.Println("Sem vizinhos — tentando reconectar via Peers Conhecidos...")
+        printWarning("Sem vizinhos — tentando reconectar via Peers Conhecidos...")
         for _, known := range node.KnownPeers {
             if known != addr {
                 go connectToPeer(known)
                 return
             }
         }
-        fmt.Println("Nenhum peer conhecido disponível")
+        printWarning("Nenhum peer conhecido disponível")
     }
 }
 
@@ -80,10 +79,10 @@ func connectToPeer(addr string) {
 func connectToPeerAndDo(addr string, onConnected func(*websocket.Conn)) {
     conn, _, err := websocket.DefaultDialer.Dial(addr, nil)
     if err != nil {
-        fmt.Printf("Erro ao conectar em %s: %v\n", addr, err)
+        printError("Erro ao conectar em %s: %v", addr, err)
         return
     }
-    fmt.Printf("Conectado em %s\n", addr)
+    printSystem("Conectado em %s", addr)
 
     connAddr[conn] = addr // guarda antes do HELLO chegar
 

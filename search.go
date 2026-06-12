@@ -9,7 +9,37 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func startSearch() {
+func searchWithRetry() {
+    // limpa o channel de qualquer sinal anterior
+    select {
+    case <-searchDone:
+    default:
+    }
+
+    ttl := 7
+    startSearch(ttl)
+
+    delays := []time.Duration{5 * time.Second, 10 * time.Second, 15 * time.Second}
+    ttlIncrements := []int{9, 11}
+
+    for i, delay := range delays {
+        select {
+        case <-searchDone:
+            return
+        case <-time.After(delay):
+            if i < len(ttlIncrements) {
+                ttl = ttlIncrements[i]
+                printWarning("Sem resposta, reenviando busca...")
+                startSearch(ttl)
+            } else {
+                printWarning("Nenhuma resposta recebida")
+				printMenu()
+            }
+        }
+    }
+}
+
+func startSearch(ttl int) {
 	msg := Message{
 		Type:         "SEARCH",
 		MessageID:    uuid.NewString(),
@@ -17,7 +47,7 @@ func startSearch() {
 		OriginPeerIP: getLocalIP(),
 		SenderPeerID: node.ID,
 		QueryID:      uuid.NewString(),
-		TTL:          7,
+		TTL:          ttl,
 		StickerID:    wantSticker,
 	}
 
@@ -27,7 +57,7 @@ func startSearch() {
 	node.mu.Unlock()
 
 	broadcast(msg, nil)
-	fmt.Printf("Busca iniciada por %s (query: %s)\n", wantSticker, msg.QueryID)
+	printInfo("Busca iniciada por %s (query: %s)", wantSticker, msg.QueryID)
 }
 
 func handleSearch(conn *websocket.Conn, msg Message) {
@@ -57,7 +87,9 @@ func handleSearch(conn *websocket.Conn, msg Message) {
                 sendSearchHit(newConn, originalMsg)
             })
         }
-    }
+    } else{
+		sendSearchMiss(conn, msg)
+	}
 
 	// ainda tem TTL para repassar?
 	if msg.TTL > 1 {
@@ -67,10 +99,36 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 	}
 }
 
+func sendSearchMiss(conn *websocket.Conn, original Message) {
+    miss := Message{
+        Type:           "SEARCH_MISS",
+        MessageID:      uuid.NewString(),
+        OriginPeerID:   node.ID,
+        SenderPeerID:   node.ID,
+        ReceiverPeerID: original.SenderPeerID,
+        QueryID:        original.QueryID,
+        StickerID:      original.StickerID,
+    }
+
+    data, err := json.Marshal(miss)
+    if err != nil {
+        printError("Erro ao serializar SEARCH_MISS: %v", err)
+        return
+    }
+    conn.WriteMessage(websocket.TextMessage, data)
+}
+
+func handleSearchMiss(conn *websocket.Conn, msg Message) {
+    // só loga se formos o origin da busca, senão é só ruído
+    if msg.ReceiverPeerID == node.ID {
+        printInfo("Nó %s não possui %s.", msg.OriginPeerID, msg.StickerID)
+    }
+}
+
 func broadcast(msg Message, except *websocket.Conn) {
 	data, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Println("Erro ao serializar broadcast:", err)
+		printError("Erro ao serializar broadcast: %v", err)
 		return
 	}
 
@@ -87,17 +145,24 @@ func broadcast(msg Message, except *websocket.Conn) {
 func handleSearchHit(conn *websocket.Conn, msg Message) {
     // sou o destino?
     if msg.ReceiverPeerID == node.ID {
+
+		select {
+			case searchDone <- struct{}{}:
+			default:
+				return // resposta duplicada ou tardia ignora
+			}
+
         // armazena quem tem a figurinha para usar no trade depois
         node.mu.Lock()
         node.SearchResults[msg.StickerID] = &PeerConn{
             PeerID: msg.SenderPeerID,
-            Conn:   conn,
+            Conn: conn,
         }
         peerToTrade = msg.SenderPeerID
         node.mu.Unlock()
 
-        fmt.Printf("Figurinha %s encontrada em %s!\n", msg.StickerID, msg.SenderPeerID)
-        fmt.Printf("Use 'offer <FIG-XX>' para propor uma troca.\n")
+        printSuccess("Figurinha %s encontrada em %s!", msg.StickerID, msg.SenderPeerID)
+        printSuccess("Use 'offer <FIG-XX>' para propor uma troca.")
         return
     }
 
@@ -107,14 +172,14 @@ func handleSearchHit(conn *websocket.Conn, msg Message) {
     node.mu.RUnlock()
 
     if !ok {
-        fmt.Printf("SEARCH_HIT: destino %s não é vizinho, não consigo rotear\n", msg.ReceiverPeerID)
+        printWarning("SEARCH_HIT: destino %s não é vizinho, não consigo rotear", msg.ReceiverPeerID)
         return
     }
 
     msg.SenderPeerID = node.ID
     data, err := json.Marshal(msg)
     if err != nil {
-        fmt.Println("Erro ao serializar SEARCH_HIT no roteamento:", err)
+        printError("Erro ao serializar SEARCH_HIT no roteamento: %v", err)
         return
     }
     dest.Conn.WriteMessage(websocket.TextMessage, data)
@@ -133,7 +198,7 @@ func sendSearchHit(conn *websocket.Conn, original Message) {
 
 	data, err := json.Marshal(hit)
 	if err != nil {
-		fmt.Println("Erro ao serializar SEARCH_HIT:", err)
+		printError("Erro ao serializar SEARCH_HIT: %v", err)
 		return
 	}
 	conn.WriteMessage(websocket.TextMessage, data)

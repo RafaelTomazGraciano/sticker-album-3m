@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 )
 
@@ -22,7 +21,7 @@ func sendNeighborList(conn *websocket.Conn) {
 
     data, err := json.Marshal(msg)
     if err != nil {
-        fmt.Println("Erro ao serializar HELLO:", err)
+        printError("Erro ao serializar HELLO: %v", err)
         return
     }
     conn.WriteMessage(websocket.TextMessage, data)
@@ -39,7 +38,7 @@ func helloToNeighbors(newConn *websocket.Conn) {
 
     data, err := json.Marshal(msg)
     if err != nil {
-        fmt.Println("Erro ao serializar HELLO:", err)
+        printError("Erro ao serializar HELLO: %v", err)
         return
     }
 
@@ -68,6 +67,6 @@ func handleHello(conn *websocket.Conn, msg Message) {
     }
     node.mu.Unlock()
 
-    fmt.Printf("Peer %s registrado em %s. Backup recebido: %v\n", msg.SenderPeerID, addr, msg.Peers)
+    printSystem("Peer %s registrado em %s. Backup recebido: %v", msg.SenderPeerID, addr, msg.Peers)
 }
 

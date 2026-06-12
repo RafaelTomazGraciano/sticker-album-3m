@@ -28,7 +28,7 @@ go run . -id 23
 Abra outro terminal e execute o comando abaixo:
 
 ```bash
-go run . -id 5 -peer 127.0.0.1
+go run . -id 5 -peer 127.0.0.1:PORTA
 ```
 
 Faça uma busca pela figurinha 23:

@@ -2,14 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 )
 
 func handleMessage(conn *websocket.Conn, raw []byte) {
     var msg Message
     if err := json.Unmarshal(raw, &msg); err != nil {
-        fmt.Println("Erro ao parsear mensagem:", err)
+        printError("Erro ao parsear mensagem:", err)
         return
     }
 
@@ -20,6 +19,8 @@ func handleMessage(conn *websocket.Conn, raw []byte) {
         handleSearch(conn, msg)
     case "SEARCH_HIT":
         handleSearchHit(conn, msg)
+    case "SEARCH_MISS":
+        handleSearchMiss(conn, msg)
     case "TRADE_OFFER":
         handleTradeOffer(conn, msg)
     case "TRADE_ACCEPT":
@@ -29,6 +30,6 @@ func handleMessage(conn *websocket.Conn, raw []byte) {
     case "TRANSFER_CONFIRM":
         handleTransferConfirm(conn, msg)
     default:
-        fmt.Printf("Tipo de mensagem desconhecido: %s\n", msg.Type)
+        printError("Tipo de mensagem desconhecido: %s\n", msg.Type)
     }
 }
