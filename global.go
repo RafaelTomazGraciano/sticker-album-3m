@@ -14,7 +14,7 @@ var offerSticker string
 var peerToTrade string
 
 var inventory Album
-const inventoryFile = "inventory.json"
+var inventoryFile string
 
 // canal para o inputLoop comunicar a decisao de accept/reject ao handleTradeOffer
 var tradeDecision = make(chan string, 1)

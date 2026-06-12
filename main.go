@@ -28,6 +28,7 @@ func main(){
 
 	peerID := fmt.Sprintf("ALUNO-%02d", *idPtr)
 	stickerID := fmt.Sprintf("FIG-%02d", *idPtr)
+	inventoryFile = fmt.Sprintf("inventory-%s.json", peerID)
 	
 	// Peer node
 	node = &Peer{
@@ -97,6 +98,10 @@ func inputLoop() {
                 printWarning("Uso: search <FIG-XX>")
                 continue
             }
+			if !strings.HasPrefix(parts[1], "FIG-") {
+				printWarning("Formato inválido. Use FIG-XX (ex: FIG-23)")
+				continue
+			}
 			wantSticker = parts[1]
         	go searchWithRetry()
 		
