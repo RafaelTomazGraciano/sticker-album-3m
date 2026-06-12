@@ -51,12 +51,12 @@ func main(){
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
-	serverPort = findAvailablePort()
-	printSystem("Nó %s iniciado na porta %d", peerID, serverPort)
+	port := findAvailablePort()
+	printSystem("Nó %s iniciado na porta %d", peerID, port)
 
 	go inputLoop()	
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", serverPort), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		printError("Erro ao iniciar servidor: %v", err)
 	}
@@ -93,10 +93,12 @@ func inputLoop() {
         case "search":
             if len(parts) < 2 {
                 printWarning("Uso: search <FIG-XX>")
+				fmt.Print("> ")
                 continue
             }
 			if !strings.HasPrefix(parts[1], "FIG-") {
 				printWarning("Formato inválido. Use FIG-XX (ex: FIG-23)")
+				fmt.Print("> ")
 				continue
 			}
 			wantSticker = parts[1]
@@ -105,6 +107,7 @@ func inputLoop() {
 		case "offer":
 			if len(parts) < 2 {
 				printWarning("Uso: offer <FIG-XX>")
+				fmt.Print("> ")
 				continue
 			}
 			offerSticker = parts[1]
@@ -116,6 +119,7 @@ func inputLoop() {
 			default:
 				printWarning("Nenhuma proposta de troca pendente")
 			}
+			fmt.Print("> ")
 
 		case "reject":
 			select {
@@ -123,17 +127,20 @@ func inputLoop() {
 			default:
 				printWarning("Nenhuma proposta de troca pendente")
 			}
+			fmt.Print("> ")
 
         case "list":
             node.mu.RLock()
             printInfo("Seu inventário:")
             for sticker, qty := range node.Inventory {
                 printInfo(" %s: %d", sticker, qty)
+				fmt.Print("> ")
             }
             node.mu.RUnlock()
 
         default:
             printWarning("Comando desconhecido: %s", parts[0])
+			fmt.Print("> ")
         }
     }
 }
