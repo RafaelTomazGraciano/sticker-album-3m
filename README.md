@@ -36,23 +36,3 @@ Para executar o projeto, utilize o comando abaixo, substituindo `ID` pelo seu n�
 2. `offer FIG-YY` — propõe a troca oferecendo uma figurinha sua
 3. O outro nó recebe a proposta e digita `accept` ou `reject`
 4. Se aceita, ambos os inventários são atualizados automaticamente
-
-## Teste local
-
-Para executar os testes, abra um terminal e execute o comando abaixo:
-
-```bash
-go run . -id 23
-```
-
-Abra outro terminal e execute o comando abaixo:
-
-```bash
-go run . -id 5 -peer 127.0.0.1:PORTA
-```
-
-Faça uma busca pela figurinha 23:
-
-```bash
-search FIG-23
-```

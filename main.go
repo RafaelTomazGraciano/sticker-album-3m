@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -42,8 +41,7 @@ func main(){
 	}
 
 	if *peerIP != "" {
-		addr := fmt.Sprintf("ws://%s/ws", *peerIP) //Para teste, REMOVER
-		//addr := fmt.Sprintf("ws://%s:8080/ws", *peerIP)
+		addr := fmt.Sprintf("ws://%s:8080/ws", *peerIP)
 		go connectToPeer(addr)
 	}
 
@@ -51,28 +49,14 @@ func main(){
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
-	port := findAvailablePort()
-	printSystem("Nó %s iniciado na porta %d", peerID, port)
+	printSystem("Nó %s iniciado na porta 8080", peerID)
 
 	go inputLoop()	
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		printError("Erro ao iniciar servidor: %v", err)
 	}
-}
-
-func findAvailablePort() int {
-    for port := 8080; port <= 8090; port++ {
-        ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-        if err == nil {
-            ln.Close()
-            return port
-        }
-    }
-    printError("Nenhuma porta disponível entre 8080 e 8090")
-    os.Exit(1)
-    return 0
 }
 
 func inputLoop() {
@@ -134,8 +118,8 @@ func inputLoop() {
             printInfo("Seu inventário:")
             for sticker, qty := range node.Inventory {
                 printInfo(" %s: %d", sticker, qty)
-				fmt.Print("> ")
             }
+			fmt.Print("> ")
             node.mu.RUnlock()
 
         default:
