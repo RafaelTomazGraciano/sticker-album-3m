@@ -10,7 +10,7 @@ import (
 
 func startTradeOffer() {
     node.mu.RLock()
-    qty := node.Inventory[offerSticker]
+    qty := inventory.Stickers[offerSticker]
     result, temConexaoDireta := node.SearchResults[wantSticker]
     node.mu.RUnlock()
 
@@ -46,7 +46,7 @@ func startTradeOffer() {
 
 func handleTradeOffer(conn *websocket.Conn, msg Message) {
     node.mu.RLock()
-    qty := node.Inventory[msg.WantSticker]
+    qty := inventory.Stickers[msg.WantSticker]
     node.mu.RUnlock()
 
     if qty <= 0 {

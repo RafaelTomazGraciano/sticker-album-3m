@@ -72,7 +72,7 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 
 	// tenho a figurinha?
 	node.mu.RLock()
-	qty := node.Inventory[msg.StickerID]
+	qty := inventory.Stickers[msg.StickerID]
 	_, jaEVizinho := node.Neighbors[msg.OriginPeerID]
 	node.mu.RUnlock()
 
