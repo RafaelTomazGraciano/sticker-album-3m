@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "strings"
 	"encoding/json"
     "github.com/google/uuid"
@@ -68,7 +69,7 @@ func handleHello(conn *websocket.Conn, msg Message) {
 
     // salva os endereços recebidos como backup
     for _, addr := range msg.Peers {
-        if addr != localIP {
+        if addr != fmt.Sprintf("ws://%s:8080/ws", localIP) {
             node.KnownPeers = append(node.KnownPeers, addr)
         }
     }
