@@ -30,6 +30,9 @@ func initializeInventory(figNumber int) {
 }
 
 func updateInventory(receivedSticker, sentSticker string) {
+    if _, ok := inventory.Stickers[receivedSticker]; !ok {
+        inventory.Stickers[receivedSticker] = 0
+    }
     inventory.Stickers[receivedSticker]++
     inventory.Stickers[sentSticker]--
     saveInventoryFile()

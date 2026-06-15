@@ -73,7 +73,7 @@ func handleDisconnect(addr string) {
 }
 
 func connectToPeer(addr string) {
-    connectToPeerAndDo(addr, nil)
+    connectToPeerAndDo(addr, onNewPeerConnected)
 }
 
 func connectToPeerAndDo(addr string, onConnected func(*websocket.Conn)) {

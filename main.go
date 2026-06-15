@@ -116,9 +116,18 @@ func inputLoop() {
         case "list":
             node.mu.RLock()
             printInfo("Seu inventário:")
-            for sticker, qty := range node.Inventory {
+            for sticker, qty := range inventory.Stickers {
                 printInfo(" %s: %d", sticker, qty)
             }
+			fmt.Print("> ")
+            node.mu.RUnlock()
+
+		case "peers":
+			node.mu.RLock()
+			printInfo("Seu vizinhos:")
+			for neighbors, qty := range node.Neighbors {
+				printInfo(" %s: %d", neighbors, qty)
+			}
 			fmt.Print("> ")
             node.mu.RUnlock()
 

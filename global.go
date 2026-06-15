@@ -46,6 +46,7 @@ func printMenu() {
     printInfo("  accept            -> aceita a troca entre figurinhas")
     printInfo("  reject            -> rejeita a troca entre figurinhas")
     printInfo("  list              -> ver seu inventário")
+    printInfo("  peers             -> ver sua lista de vizinhos")
     fmt.Print("> ")
 }
 
