@@ -1,6 +1,8 @@
 package main
 
 import (
+    "fmt"
+    "net"
 	"net/http"
 	"github.com/gorilla/websocket"
 )
@@ -22,7 +24,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // pega o IP de quem conectou (formato "IP:porta")
-    addr := r.RemoteAddr
+    host, _, _ := net.SplitHostPort(r.RemoteAddr)
+    addr := fmt.Sprintf("ws://%s:8080/ws", host)
     connAddr[conn] = addr
 
     onNewPeerConnected(conn)
