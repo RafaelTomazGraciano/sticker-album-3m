@@ -73,7 +73,6 @@ func handleDisconnect(addr string) {
 }
 
 func connectToPeer(addr string) {
-    sendHello(conn)
     connectToPeerAndDo(addr, onNewPeerConnected)
 }
 

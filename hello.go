@@ -3,6 +3,7 @@ package main
 import (
     "strings"
 	"encoding/json"
+    "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
