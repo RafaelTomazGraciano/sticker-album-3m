@@ -56,6 +56,7 @@ func handleHello(conn *websocket.Conn, msg Message) {
     node.mu.Lock()
 
     addr := connAddr[conn]
+    _, jaConhecia := node.Neighbors[msg.SenderPeerID]
 	
     // salva o peer que enviou o HELLO como vizinho com ID correto
     node.Neighbors[msg.SenderPeerID] = &PeerConn{
@@ -71,5 +72,32 @@ func handleHello(conn *websocket.Conn, msg Message) {
     node.mu.Unlock()
 
     printSystem("Peer %s registrado em %s. Backup recebido: %v", msg.SenderPeerID, addr, msg.Peers)
+
+    if !jaConhecia {
+        sendHello(conn)
+    }
+}
+
+func sendHello(conn *websocket.Conn) {
+    node.mu.RLock()
+    neighbors := make([]string, 0, len(node.Neighbors))
+    for _, pc := range node.Neighbors {
+        neighbors = append(neighbors, pc.Addr)
+    }
+    node.mu.RUnlock()
+
+    msg := Message{
+        Type:         "HELLO",
+        MessageID:    uuid.NewString(),
+        SenderPeerID: node.ID,
+        Peers:        neighbors,
+    }
+
+    data, err := json.Marshal(msg)
+    if err != nil {
+        printError("Erro ao serializar HELLO: %v", err)
+        return
+    }
+    conn.WriteMessage(websocket.TextMessage, data)
 }
 

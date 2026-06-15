@@ -30,7 +30,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func onNewPeerConnected(conn *websocket.Conn) {
-    sendNeighborList(conn)
+    sendHello(conn)
     helloToNeighbors(conn)
 }
 
@@ -73,6 +73,7 @@ func handleDisconnect(addr string) {
 }
 
 func connectToPeer(addr string) {
+    sendHello(conn)
     connectToPeerAndDo(addr, onNewPeerConnected)
 }
 
