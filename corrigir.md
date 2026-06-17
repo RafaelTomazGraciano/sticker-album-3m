@@ -1,1 +1,0 @@
-corrigir quando acontecer um search hit, o detentor da figurinha tem que se comunicar diretamente com quem quer e ambos deve salvar o ip um do outro para se tornarem viznhos

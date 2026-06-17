@@ -45,6 +45,10 @@ func startTradeOffer() {
 }
 
 func handleTradeOffer(conn *websocket.Conn, msg Message) {
+    if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
+        return
+    }
+
     node.mu.RLock()
     qty := inventory.Stickers[msg.WantSticker]
     node.mu.RUnlock()
@@ -107,6 +111,10 @@ func sendTradeReject(conn *websocket.Conn, original Message) {
 }
 
 func handleTradeAccept(conn *websocket.Conn, msg Message) {
+    if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
+        return
+    }
+
 	printSuccess("%s aceitou a troca! Confirmando transferência...", msg.OriginPeerID)
 
     // envia CONFIRM
@@ -133,10 +141,18 @@ func handleTradeAccept(conn *websocket.Conn, msg Message) {
 }
 
 func handleTradeReject(conn *websocket.Conn, msg Message) {
+    if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
+        return
+    }
+
 	printError("%s recusou a troca", msg.OriginPeerID)
 }
 
 func handleTransferConfirm(conn *websocket.Conn, msg Message) {
+    if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
+        return
+    }
+    
 	updateInventory(msg.OfferSticker, msg.WantSticker)
     printSuccess("Transferência confirmada! +%s / -%s", msg.OfferSticker, msg.WantSticker)
 }

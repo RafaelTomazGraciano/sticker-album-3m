@@ -30,9 +30,18 @@ func initializeInventory(figNumber int) {
 }
 
 func updateInventory(receivedSticker, sentSticker string) {
+    node.mu.Lock()
+    defer node.mu.Unlock()
+
+    if inventory.Stickers[sentSticker] <= 0 {
+        printError("Tentativa de enviar %s sem possuir o item (quantidade: %d)", sentSticker, inventory.Stickers[sentSticker])
+        return
+    }
+
     if _, ok := inventory.Stickers[receivedSticker]; !ok {
         inventory.Stickers[receivedSticker] = 0
     }
+
     inventory.Stickers[receivedSticker]++
     inventory.Stickers[sentSticker]--
     saveInventoryFile()
