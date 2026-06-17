@@ -1,0 +1,22 @@
+{
+  "name": "sticker-album-3m",
+  "version": "1.0.0",
+  "description": "Sistema de troca de figurinhas em rede P2P não estruturada, desenvolvido em Go. Cada nó representa um aluno, mantém seu próprio inventário e se comunica com outros nós via WebSocket usando mensagens JSON.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
