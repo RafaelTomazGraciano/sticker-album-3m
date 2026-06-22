@@ -49,6 +49,7 @@ func main(){
 
 	// Web Socket
 	http.HandleFunc("/ws", wsHandler)
+	registerAPIRoutes()
 	printSystem("Nó %s iniciado na porta 8080", peerID)
 
 	go inputLoop()	
@@ -92,47 +93,42 @@ func inputLoop() {
 				fmt.Print("> ")
                 continue
             }
-			if !strings.HasPrefix(parts[1], "FIG-") {
-				printWarning("Formato inválido. Use FIG-XX (ex: FIG-23)")
+			if err := cmdSearch(parts[1]); err != nil {
+				printWarning("%v", err)
 				fmt.Print("> ")
 				continue
 			}
-			wantSticker = parts[1]
-        	go searchWithRetry()
-		
+
 		case "offer":
 			if len(parts) < 2 {
 				printWarning("Uso: offer <FIG-XX>")
 				fmt.Print("> ")
 				continue
 			}
-			offerSticker = parts[1]
-			startTradeOffer()
-		
+			if err := cmdOffer(parts[1]); err != nil {
+				printWarning("%v", err)
+				fmt.Print("> ")
+				continue
+			}
+
 		case "accept":
-			select {
-			case tradeDecision <- "accept":
-			default:
-				printWarning("Nenhuma proposta de troca pendente")
+			if err := cmdAccept(); err != nil {
+				printWarning("%v", err)
 			}
 			fmt.Print("> ")
 
 		case "reject":
-			select {
-			case tradeDecision <- "reject":
-			default:
-				printWarning("Nenhuma proposta de troca pendente")
+			if err := cmdReject(); err != nil {
+				printWarning("%v", err)
 			}
 			fmt.Print("> ")
 
         case "list":
-            node.mu.RLock()
             printInfo("Seu inventário:")
-            for sticker, qty := range inventory.Stickers {
+            for sticker, qty := range cmdListInventory() {
                 printInfo(" %s: %d", sticker, qty)
             }
 			fmt.Print("> ")
-            node.mu.RUnlock()
 
 		case "peers":
 			node.mu.RLock()
@@ -148,4 +144,60 @@ func inputLoop() {
 			fmt.Print("> ")
         }
     }
+}
+
+func cmdSearch(sticker string) error {
+    if !strings.HasPrefix(sticker, "FIG-") {
+        return fmt.Errorf("Formato inválido. Use FIG-XX (ex: FIG-23)")
+    }
+    wantSticker = sticker
+    go searchWithRetry()
+    return nil
+}
+
+func cmdOffer(sticker string) error {
+    if !strings.HasPrefix(sticker, "FIG-") {
+        return fmt.Errorf("Formato inválido. Use FIG-XX (ex: FIG-23)")
+    }
+    offerSticker = sticker
+    startTradeOffer()
+    return nil
+}
+
+func cmdAccept() error {
+    select {
+    case tradeDecision <- "accept":
+        return nil
+    default:
+        return fmt.Errorf("Nenhuma proposta de troca pendente")
+    }
+}
+
+func cmdReject() error {
+    select {
+    case tradeDecision <- "reject":
+        return nil
+    default:
+        return fmt.Errorf("Nenhuma proposta de troca pendente")
+    }
+}
+
+func cmdListInventory() map[string]int {
+    node.mu.RLock()
+    defer node.mu.RUnlock()
+    out := make(map[string]int, len(inventory.Stickers))
+    for sticker, qty := range inventory.Stickers {
+        out[sticker] = qty
+    }
+    return out
+}
+
+func cmdListPeers() []string {
+    node.mu.RLock()
+    defer node.mu.RUnlock()
+    out := make([]string, 0, len(node.Neighbors))
+    for peerID := range node.Neighbors {
+        out = append(out, peerID)
+    }
+    return out
 }

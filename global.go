@@ -3,10 +3,29 @@ package main
 import (
     "fmt"
     "net"
+    "sync"
 )
 
 var node *Peer
 var localIP string
+
+var logHistory []string
+var logMu sync.Mutex
+
+func appendLog(line string) {
+    logMu.Lock()
+    defer logMu.Unlock()
+    logHistory = append(logHistory, line)
+    if len(logHistory) > 500 { // evita crescer infinito
+        logHistory = logHistory[len(logHistory)-500:]
+    }
+}
+
+func getLogs() []string {
+    logMu.Lock()
+    defer logMu.Unlock()
+    return append([]string{}, logHistory...) // cópia
+}
 
 var wantSticker string
 var offerSticker string
@@ -52,20 +71,25 @@ func printMenu() {
 
 func printSuccess(format string, args ...any) {
     fmt.Printf(ColorGreen+format+ColorReset+"\n", args...)
+    appendLog(fmt.Sprintf(format, args...))
 }
 
 func printError(format string, args ...any) {
     fmt.Printf(ColorRed+format+ColorReset+"\n", args...)
+    appendLog(fmt.Sprintf(format, args...))
 }
 
 func printWarning(format string, args ...any) {
     fmt.Printf(ColorYellow+format+ColorReset+"\n", args...)
+    appendLog(fmt.Sprintf(format, args...))
 }
 
 func printInfo(format string, args ...any) {
     fmt.Printf(ColorBlue+format+ColorReset+"\n", args...)
+    appendLog(fmt.Sprintf(format, args...))
 }
 
 func printSystem(format string, args ...any) {
     fmt.Printf(ColorCyan+format+ColorReset+"\n", args...)
+    appendLog(fmt.Sprintf(format, args...))
 }

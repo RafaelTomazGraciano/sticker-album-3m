@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rede P2P de Figurinhas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TELA 1: SEU IP -->
+  <main id="screen-ip" class="screen active">
+    <section class="panel panel-ip">
+      <header class="panel-header">
+        <h1>SEU IP</h1>
+        <div class="ip-info">
+          <span id="node-ip">--.--.--.--</span>
+          <span class="dot" id="conn-dot" title="Status da conexão com a API"></span>
+          <span id="node-id" class="node-id">ALUNO-XX</span>
+        </div>
+      </header>
+
+      <div class="command-row">
+        <div class="command-bar">
+          <span class="command-bar-label">Comandos disponíveis</span>
+          <div class="command-buttons">
+            <button class="cmd-btn" data-cmd="search">Search</button>
+            <button class="cmd-btn" data-cmd="offer">Offer</button>
+            <button class="cmd-btn" data-cmd="list">Listar inventário</button>
+            <button class="cmd-btn" data-cmd="peers">Peers</button>
+          </div>
+        </div>
+
+        <div class="fig-num-box">
+          <label for="fig-num">Num FIG</label>
+          <input id="fig-num" type="number" min="1" max="28" placeholder="01">
+        </div>
+
+        <button id="btn-ver-album" class="album-btn">Ver<br>álbum</button>
+      </div>
+
+      <section class="logs-section">
+        <h2>LOGS</h2>
+        <div id="logs-list" class="logs-list"></div>
+        <span class="scroll-hint">Scrollable</span>
+      </section>
+    </section>
+  </main>
+
+  <!-- TELA 2: ALBUM -->
+  <main id="screen-album" class="screen">
+    <section class="panel panel-album">
+      <header class="panel-header album-header">
+        <button id="btn-voltar" class="voltar-btn">Voltar</button>
+        <h1>Álbum</h1>
+        <span id="album-counter" class="album-counter">0/28</span>
+      </header>
+
+      <div id="album-grid" class="album-grid"></div>
+      <span class="scroll-hint">Scrollable</span>
+    </section>
+  </main>
+
+  <!-- POPUP: TROCA DE FIGURINHA -->
+  <div id="popup-overlay" class="popup-overlay hidden">
+    <div class="popup-box">
+      <h2>Troca de Figurinha</h2>
+      <p class="popup-subtitle">Dados da troca de figurinha</p>
+      <div class="popup-details">
+        <div class="popup-row"><span class="popup-key">De:</span> <span id="popup-from">--</span></div>
+        <div class="popup-row"><span class="popup-key">Oferece:</span> <span id="popup-offers">--</span></div>
+        <div class="popup-row"><span class="popup-key">Quer:</span> <span id="popup-wants">--</span></div>
+      </div>
+      <div class="popup-actions">
+        <button id="btn-aceitar" class="popup-btn accept">Aceitar</button>
+        <button id="btn-rejeitar" class="popup-btn reject">Rejeitar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

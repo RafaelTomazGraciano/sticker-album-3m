@@ -2,11 +2,27 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
+
+var pendingOffer *Message
+var pendingOfferMu sync.RWMutex
+
+func setPendingOffer(msg *Message) {
+    pendingOfferMu.Lock()
+    pendingOffer = msg
+    pendingOfferMu.Unlock()
+}
+
+func getPendingOffer() *Message {
+    pendingOfferMu.RLock()
+    defer pendingOfferMu.RUnlock()
+    return pendingOffer
+}
 
 func startTradeOffer() {
     node.mu.RLock()
@@ -80,14 +96,18 @@ func handleTradeOffer(conn *websocket.Conn, msg Message) {
     printWarning(" Digite 'accept' para aceitar ou 'reject' para recusar")
     fmt.Print("> ")
 
+    setPendingOffer(&msg)
+
     select {
     case decision := <-tradeDecision:
+        setPendingOffer(nil)
         if decision == "accept" {
             sendTradeAccept(conn, msg)
         } else {
             sendTradeReject(conn, msg)
         }
     case <-time.After(30 * time.Second):
+        setPendingOffer(nil)
         printWarning("Tempo esgotado. Rejeitando proposta automaticamente")
         sendTradeReject(conn, msg)
 		printMenu()
