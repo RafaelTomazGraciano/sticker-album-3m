@@ -11,11 +11,18 @@ import (
 func startTradeOffer() {
     node.mu.RLock()
     qty := inventory.Stickers[offerSticker]
-    result, temConexaoDireta := node.SearchResults[wantSticker]
+    result, temResultado := node.SearchResults[wantSticker]
     node.mu.RUnlock()
 
     if qty <= 0 {
         printWarning("Você não possui '%s' para oferecer", offerSticker)
+        fmt.Print("> ")
+        return
+    }
+
+    if !temResultado {
+        printWarning("Nenhum resultado de busca para %s. Faça um 'search' primeiro.", wantSticker)
+        fmt.Print("> ")
         return
     }
 
@@ -35,12 +42,19 @@ func startTradeOffer() {
         return
     }
 
-    if temConexaoDireta {
+    if result.Conn != nil {
+        // já tem conexão direta (vizinho direto)
         result.Conn.WriteMessage(websocket.TextMessage, data)
         printInfo("Oferta enviada diretamente para %s", peerToTrade)
+    } else if result.Addr != "" {
+        // não é vizinho direto: conecta pelo IP salvo no SEARCH_HIT
+        msgCopy := msgTrade
+        go connectToPeerAndDo(result.Addr, func(newConn *websocket.Conn) {
+            newConn.WriteMessage(websocket.TextMessage, data)
+            printInfo("Oferta enviada via nova conexão para %s", msgCopy.ReceiverPeerID)
+        })
     } else {
-        broadcast(msgTrade, nil)
-        printInfo("Oferta enviada por broadcast para %s", peerToTrade)
+        printWarning("Sem rota para %s. Tente buscar novamente.", peerToTrade)
     }
 }
 
@@ -87,12 +101,15 @@ func sendTradeAccept(conn *websocket.Conn, original Message) {
         OriginPeerID:   node.ID,
         SenderPeerID:   node.ID,
         ReceiverPeerID: original.OriginPeerID,
-        OfferSticker:   original.OfferSticker,
-        WantSticker:    original.WantSticker,
+        OfferSticker:   original.WantSticker,
+        WantSticker:    original.OfferSticker,
     }
+    
     data, _ := json.Marshal(msg)
     conn.WriteMessage(websocket.TextMessage, data)
-    printSuccess("Troca aceita com %s.", original.OriginPeerID)
+
+    updateInventory(original.OfferSticker, original.WantSticker)
+    printSuccess("Troca aceita com %s. +%s / -%s", original.OriginPeerID, original.OfferSticker, original.WantSticker)
 }
 
 func sendTradeReject(conn *websocket.Conn, original Message) {
@@ -136,8 +153,8 @@ func handleTradeAccept(conn *websocket.Conn, msg Message) {
     conn.WriteMessage(websocket.TextMessage, data)
 
     // atualiza o inventario
-    updateInventory(msg.WantSticker, msg.OfferSticker)
-    printSuccess("Inventário atualizado: +%s / -%s", msg.WantSticker, msg.OfferSticker)
+    updateInventory(msg.OfferSticker, msg.WantSticker)
+    printSuccess("Inventário atualizado: +%s / -%s", msg.OfferSticker, msg.WantSticker)
 }
 
 func handleTradeReject(conn *websocket.Conn, msg Message) {
@@ -152,7 +169,5 @@ func handleTransferConfirm(conn *websocket.Conn, msg Message) {
     if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
         return
     }
-    
-	updateInventory(msg.OfferSticker, msg.WantSticker)
-    printSuccess("Transferência confirmada! +%s / -%s", msg.OfferSticker, msg.WantSticker)
+    printSuccess("Transferência confirmada por %s!", msg.OriginPeerID)
 }

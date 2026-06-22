@@ -44,7 +44,7 @@ func startSearch(ttl int) {
 		Type:         "SEARCH",
 		MessageID:    uuid.NewString(),
 		OriginPeerID: node.ID,
-		OriginPeerIP: getLocalIP(),
+		OriginPeerIP: fmt.Sprintf("ws://%s:8080/ws", getLocalIP()),
 		SenderPeerID: node.ID,
 		QueryID:      uuid.NewString(),
 		TTL:          ttl,
@@ -81,7 +81,7 @@ func handleSearch(conn *websocket.Conn, msg Message) {
             sendSearchHit(conn, msg)
         } else {
             // origin nao e vizinho. Conecta primeiro, depois envia o hit pela nova conexao
-            addr := fmt.Sprintf("ws://%s:8080/ws", msg.OriginPeerIP)
+            addr := msg.OriginPeerIP
             originalMsg := msg
             go connectToPeerAndDo(addr, func(newConn *websocket.Conn) {
                 sendSearchHit(newConn, originalMsg)
@@ -143,22 +143,22 @@ func broadcast(msg Message, except *websocket.Conn) {
 }
 
 func handleSearchHit(conn *websocket.Conn, msg Message) {
-    // sou o destino?
     if msg.ReceiverPeerID == node.ID {
-
-		select {
-			case searchDone <- struct{}{}:
-			default:
-				return // resposta duplicada ou tardia ignora
-			}
-
-        // armazena quem tem a figurinha para usar no trade depois
-        node.mu.Lock()
-        node.SearchResults[msg.StickerID] = &PeerConn{
-            PeerID: msg.SenderPeerID,
-            Conn: conn,
+        select {
+        case searchDone <- struct{}{}:
+        default:
+            return
         }
-        peerToTrade = msg.SenderPeerID
+
+        node.mu.Lock()
+        if _, jaTemResultado := node.SearchResults[msg.StickerID]; !jaTemResultado {
+            node.SearchResults[msg.StickerID] = &PeerConn{
+                PeerID: msg.SenderPeerID,
+                Conn:   conn,
+                Addr:   msg.OriginPeerIP,
+            }
+            peerToTrade = msg.SenderPeerID
+        }
         node.mu.Unlock()
 
         printSuccess("Figurinha %s encontrada em %s!", msg.StickerID, msg.SenderPeerID)
@@ -166,35 +166,54 @@ func handleSearchHit(conn *websocket.Conn, msg Message) {
         return
     }
 
-    // nao sou o destino, roteia para o vizinho correto
+    // tenta rotear para vizinho direto
     node.mu.RLock()
     dest, ok := node.Neighbors[msg.ReceiverPeerID]
     node.mu.RUnlock()
 
-    if !ok {
-        printWarning("SEARCH_HIT: destino %s não é vizinho, não consigo rotear", msg.ReceiverPeerID)
+    if ok {
+        // vizinho direto: roteia normalmente
+        msg.SenderPeerID = node.ID
+        data, err := json.Marshal(msg)
+        if err != nil {
+            printError("Erro ao serializar SEARCH_HIT no roteamento: %v", err)
+            return
+        }
+        dest.Conn.WriteMessage(websocket.TextMessage, data)
         return
     }
 
-    msg.SenderPeerID = node.ID
-    data, err := json.Marshal(msg)
-    if err != nil {
-        printError("Erro ao serializar SEARCH_HIT no roteamento: %v", err)
+    // não é vizinho direto: conecta via IP e entrega
+    if msg.ReceiverPeerIP == "" {
+        printWarning("SEARCH_HIT: destino %s não é vizinho e IP desconhecido, descartando", msg.ReceiverPeerID)
         return
     }
-    dest.Conn.WriteMessage(websocket.TextMessage, data)
+
+    addr := msg.ReceiverPeerIP
+    msgCopy := msg
+    msgCopy.SenderPeerID = node.ID
+    go connectToPeerAndDo(addr, func(newConn *websocket.Conn) {
+        data, err := json.Marshal(msgCopy)
+        if err != nil {
+            printError("Erro ao serializar SEARCH_HIT (rota direta): %v", err)
+            return
+        }
+        newConn.WriteMessage(websocket.TextMessage, data)
+    })
 }
 
 func sendSearchHit(conn *websocket.Conn, original Message) {
 	hit := Message{
-		Type:           "SEARCH_HIT",
-		MessageID:      uuid.NewString(),
-		OriginPeerID:   node.ID,
-		SenderPeerID:   node.ID,
-		ReceiverPeerID: original.OriginPeerID,
-		QueryID:        original.QueryID,
-		StickerID:      original.StickerID,
-	}
+        Type:            "SEARCH_HIT",
+        MessageID:       uuid.NewString(),
+        OriginPeerID:    node.ID,
+        OriginPeerIP:    fmt.Sprintf("ws://%s:8080/ws", getLocalIP()),
+        SenderPeerID:    node.ID,
+        ReceiverPeerID:  original.OriginPeerID,
+        ReceiverPeerIP:  original.OriginPeerIP,
+        QueryID:         original.QueryID,
+        StickerID:       original.StickerID,
+    }
 
 	data, err := json.Marshal(hit)
 	if err != nil {

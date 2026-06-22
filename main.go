@@ -53,6 +53,18 @@ func main(){
 
 	go inputLoop()	
 
+	go func() {
+		for range time.Tick(1 * time.Minute) {
+			node.mu.Lock()
+			for id, t := range node.SeenQueries {
+				if time.Since(t) > 5*time.Minute {
+					delete(node.SeenQueries, id)
+				}
+			}
+			node.mu.Unlock()
+		}
+	}()
+
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		printError("Erro ao iniciar servidor: %v", err)
@@ -124,12 +136,12 @@ func inputLoop() {
 
 		case "peers":
 			node.mu.RLock()
-			printInfo("Seu vizinhos:")
-			for neighbors, qty := range node.Neighbors {
-				printInfo(" %s: %d", neighbors, qty)
+			printInfo("Seus vizinhos:")
+			for id, pc := range node.Neighbors {
+				printInfo(" %s @ %s", id, pc.Addr)
 			}
 			fmt.Print("> ")
-            node.mu.RUnlock()
+			node.mu.RUnlock()
 
         default:
             printWarning("Comando desconhecido: %s", parts[0])

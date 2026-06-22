@@ -28,7 +28,8 @@ type Message struct {
 	Type           string   `json:"type"`
 	MessageID      string   `json:"message_id"`
 	OriginPeerID   string   `json:"origin_peer_id"`
-	OriginPeerIP   string   `json:"origin_peer_ip,omitempty"`
+	OriginPeerIP    string   `json:"origin_peer_ip,omitempty"`
+    ReceiverPeerIP  string   `json:"receiver_peer_ip,omitempty"`
 	SenderPeerID   string   `json:"sender_peer_id"`
 	ReceiverPeerID string   `json:"receiver_peer_id,omitempty"`
 	QueryID        string   `json:"query_id,omitempty"`

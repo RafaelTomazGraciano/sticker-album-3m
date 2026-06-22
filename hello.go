@@ -57,7 +57,9 @@ func helloToNeighbors(newConn *websocket.Conn) {
 func handleHello(conn *websocket.Conn, msg Message) {
     node.mu.Lock()
 
+    connAddrMu.RLock()
     addr := connAddr[conn]
+    connAddrMu.RUnlock()
     _, jaConhecia := node.Neighbors[msg.SenderPeerID]
 	
     // salva o peer que enviou o HELLO como vizinho com ID correto

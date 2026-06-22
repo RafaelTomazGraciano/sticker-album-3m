@@ -22,7 +22,7 @@ func handleMessage(conn *websocket.Conn, raw []byte) {
     case "SEARCH_MISS":
         handleSearchMiss(conn, msg)
     case "TRADE_OFFER":
-        handleTradeOffer(conn, msg)
+        go handleTradeOffer(conn, msg)
     case "TRADE_ACCEPT":
         handleTradeAccept(conn, msg)
     case "TRADE_REJECT":

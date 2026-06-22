@@ -3,8 +3,9 @@ package main
 import (
     "fmt"
     "net"
-	"net/http"
-	"github.com/gorilla/websocket"
+    "net/http"
+    "sync"
+    "github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader {
@@ -14,6 +15,7 @@ var upgrader = websocket.Upgrader {
 }
 
 // map auxiliar: conn -> addr, para o handleHello conseguir preencher o Addr
+var connAddrMu sync.RWMutex
 var connAddr = make(map[*websocket.Conn]string)
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +28,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
     // pega o IP de quem conectou (formato "IP:porta")
     host, _, _ := net.SplitHostPort(r.RemoteAddr)
     addr := fmt.Sprintf("ws://%s:8080/ws", host)
+    connAddrMu.Lock()
     connAddr[conn] = addr
+    connAddrMu.Unlock()
 
     onNewPeerConnected(conn)
     listenPeer(conn, addr)
@@ -87,7 +91,9 @@ func connectToPeerAndDo(addr string, onConnected func(*websocket.Conn)) {
     }
     printSystem("Conectado em %s", addr)
 
-    connAddr[conn] = addr // guarda antes do HELLO chegar
+    connAddrMu.Lock()
+    connAddr[conn] = addr
+    connAddrMu.Unlock() 
 
     if onConnected != nil {
         onConnected(conn)
