@@ -21,6 +21,7 @@ type Peer struct {
 	KnownPeers    []string
 	SeenQueries   map[string]time.Time
 	SearchResults map[string]*PeerConn
+	QueryRoutes   map[string]*websocket.Conn
 	mu            sync.RWMutex
 }
 

@@ -52,10 +52,11 @@ func startSearch(ttl int) {
 	}
 
 	// registra o query_id para não processar o próprio flood
+	// e marca a rota como nil: "eu sou quem iniciou esta busca"
 	node.mu.Lock()
 	node.SeenQueries[msg.QueryID] = time.Now()
+	node.QueryRoutes[msg.QueryID] = nil
 	node.mu.Unlock()
-
 	broadcast(msg, nil)
 	printInfo("Busca iniciada por %s (query: %s)", wantSticker, msg.QueryID)
 }
@@ -68,26 +69,19 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 		return
 	}
 	node.SeenQueries[msg.QueryID] = time.Now()
+	// guarda a rota reversa: se chegar um HIT pra essa query, devolve por "conn"
+	node.QueryRoutes[msg.QueryID] = conn
 	node.mu.Unlock()
 
 	// tenho a figurinha?
 	node.mu.RLock()
 	qty := inventory.Stickers[msg.StickerID]
-	_, jaEVizinho := node.Neighbors[msg.OriginPeerID]
 	node.mu.RUnlock()
 
 	if qty > 0 {
-        if jaEVizinho {
-            sendSearchHit(conn, msg)
-        } else {
-            // origin nao e vizinho. Conecta primeiro, depois envia o hit pela nova conexao
-            addr := msg.OriginPeerIP
-            originalMsg := msg
-            go connectToPeerAndDo(addr, func(newConn *websocket.Conn) {
-                sendSearchHit(newConn, originalMsg)
-            })
-        }
-    } else{
+		// sempre devolve pelo mesmo caminho que a busca chegou
+		sendSearchHit(conn, msg)
+	} else {
 		sendSearchMiss(conn, msg)
 	}
 
@@ -98,7 +92,6 @@ func handleSearch(conn *websocket.Conn, msg Message) {
 		broadcast(msg, conn) // repassa para todos exceto quem enviou
 	}
 }
-
 func sendSearchMiss(conn *websocket.Conn, original Message) {
     miss := Message{
         Type:           "SEARCH_MISS",
@@ -143,7 +136,17 @@ func broadcast(msg Message, except *websocket.Conn) {
 }
 
 func handleSearchHit(conn *websocket.Conn, msg Message) {
-    if msg.ReceiverPeerID == node.ID {
+    node.mu.RLock()
+    route, temRota := node.QueryRoutes[msg.QueryID]
+    node.mu.RUnlock()
+
+    if !temRota {
+        printWarning("SEARCH_HIT para query desconhecida (%s), descartando", msg.QueryID)
+        return
+    }
+
+    if route == nil {
+        // rota nil = fui eu quem iniciou esta busca: o HIT chegou ao destino final
         select {
         case searchDone <- struct{}{}:
         default:
@@ -166,40 +169,14 @@ func handleSearchHit(conn *websocket.Conn, msg Message) {
         return
     }
 
-    // tenta rotear para vizinho direto
-    node.mu.RLock()
-    dest, ok := node.Neighbors[msg.ReceiverPeerID]
-    node.mu.RUnlock()
-
-    if ok {
-        // vizinho direto: roteia normalmente
-        msg.SenderPeerID = node.ID
-        data, err := json.Marshal(msg)
-        if err != nil {
-            printError("Erro ao serializar SEARCH_HIT no roteamento: %v", err)
-            return
-        }
-        dest.Conn.WriteMessage(websocket.TextMessage, data)
+    // não sou a origem: repassa o HIT de volta pelo mesmo caminho que o SEARCH veio
+    msg.SenderPeerID = node.ID
+    data, err := json.Marshal(msg)
+    if err != nil {
+        printError("Erro ao serializar SEARCH_HIT no roteamento: %v", err)
         return
     }
-
-    // não é vizinho direto: conecta via IP e entrega
-    if msg.ReceiverPeerIP == "" {
-        printWarning("SEARCH_HIT: destino %s não é vizinho e IP desconhecido, descartando", msg.ReceiverPeerID)
-        return
-    }
-
-    addr := msg.ReceiverPeerIP
-    msgCopy := msg
-    msgCopy.SenderPeerID = node.ID
-    go connectToPeerAndDo(addr, func(newConn *websocket.Conn) {
-        data, err := json.Marshal(msgCopy)
-        if err != nil {
-            printError("Erro ao serializar SEARCH_HIT (rota direta): %v", err)
-            return
-        }
-        newConn.WriteMessage(websocket.TextMessage, data)
-    })
+    route.WriteMessage(websocket.TextMessage, data)
 }
 
 func sendSearchHit(conn *websocket.Conn, original Message) {

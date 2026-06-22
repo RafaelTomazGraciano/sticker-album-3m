@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"github.com/gorilla/websocket"
 )
 
 func main(){
@@ -38,6 +39,7 @@ func main(){
 		KnownPeers:  []string{},
 		SeenQueries: make(map[string]time.Time),
 		SearchResults: make(map[string]*PeerConn),
+		QueryRoutes:   make(map[string]*websocket.Conn),
 	}
 
 	if *peerIP != "" {

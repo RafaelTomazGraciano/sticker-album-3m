@@ -104,12 +104,11 @@ func sendTradeAccept(conn *websocket.Conn, original Message) {
         OfferSticker:   original.WantSticker,
         WantSticker:    original.OfferSticker,
     }
-    
+
     data, _ := json.Marshal(msg)
     conn.WriteMessage(websocket.TextMessage, data)
 
-    updateInventory(original.OfferSticker, original.WantSticker)
-    printSuccess("Troca aceita com %s. +%s / -%s", original.OriginPeerID, original.OfferSticker, original.WantSticker)
+    printInfo("Troca aceita, aguardando confirmação de %s...", original.OriginPeerID)
 }
 
 func sendTradeReject(conn *websocket.Conn, original Message) {
@@ -169,5 +168,7 @@ func handleTransferConfirm(conn *websocket.Conn, msg Message) {
     if msg.ReceiverPeerID != "" && msg.ReceiverPeerID != node.ID {
         return
     }
-    printSuccess("Transferência confirmada por %s!", msg.OriginPeerID)
+
+    updateInventory(msg.WantSticker, msg.OfferSticker)
+    printSuccess("Transferência confirmada por %s! +%s / -%s", msg.OriginPeerID, msg.WantSticker, msg.OfferSticker)
 }
