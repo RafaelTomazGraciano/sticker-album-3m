@@ -26,6 +26,8 @@ func getLogs() []string {
     defer logMu.Unlock()
     return append([]string{}, logHistory...) // cópia
 }
+var tradeMu sync.Mutex
+var tradeInProgress bool
 
 var wantSticker string
 var offerSticker string

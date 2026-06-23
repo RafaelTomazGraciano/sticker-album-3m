@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"github.com/gorilla/websocket"
 )
 
 func main(){
@@ -31,13 +32,14 @@ func main(){
 	
 	// Peer node
 	node = &Peer{
-		ID:          peerID,
-		StickerID:   stickerID,
-		Inventory:   map[string]int{stickerID: 28},
-		Neighbors:   make(map[string]*PeerConn),
-		KnownPeers:  []string{},
-		SeenQueries: make(map[string]time.Time),
-		SearchResults: make(map[string]*PeerConn),
+		ID:                peerID,
+		StickerID:         stickerID,
+		Neighbors:         make(map[string]*PeerConn),
+		KnownPeers:        []string{},
+		SeenQueries:       make(map[string]time.Time),
+		SearchResults:     make(map[string]*PeerConn),
+		QueryRoutes:       make(map[string]*websocket.Conn),
+		QueryForwardRoute: make(map[string]*websocket.Conn),
 	}
 
 	if *peerIP != "" {
@@ -98,7 +100,11 @@ func inputLoop() {
 				fmt.Print("> ")
 				continue
 			}
-
+			node.mu.Lock()
+			wantSticker = parts[1]
+			node.mu.Unlock()
+        	go searchWithRetry()
+		
 		case "offer":
 			if len(parts) < 2 {
 				printWarning("Uso: offer <FIG-XX>")
@@ -111,6 +117,11 @@ func inputLoop() {
 				continue
 			}
 
+			node.mu.Lock()
+			offerSticker = parts[1]
+			node.mu.Unlock()
+			startTradeOffer()
+		
 		case "accept":
 			if err := cmdAccept(); err != nil {
 				printWarning("%v", err)
