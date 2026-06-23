@@ -8,21 +8,22 @@ import (
 )
 
 type PeerConn struct {
-	PeerID string
-	Addr   string
-	Conn   *websocket.Conn
+	PeerID  string
+	Addr    string
+	Conn    *websocket.Conn
+	QueryID string
 }
 
 type Peer struct {
-	ID            string
-	StickerID     string
-	Inventory     map[string]int
-	Neighbors     map[string]*PeerConn
-	KnownPeers    []string
-	SeenQueries   map[string]time.Time
-	SearchResults map[string]*PeerConn
-	QueryRoutes   map[string]*websocket.Conn
-	mu            sync.RWMutex
+	ID                string
+	StickerID         string
+	Neighbors         map[string]*PeerConn
+	KnownPeers        []string
+	SeenQueries       map[string]time.Time
+	SearchResults     map[string]*PeerConn
+	QueryRoutes       map[string]*websocket.Conn
+	QueryForwardRoute map[string]*websocket.Conn 
+	mu                sync.RWMutex
 }
 
 type Message struct {

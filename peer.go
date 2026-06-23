@@ -17,6 +17,19 @@ var upgrader = websocket.Upgrader {
 // map auxiliar: conn -> addr, para o handleHello conseguir preencher o Addr
 var connAddrMu sync.RWMutex
 var connAddr = make(map[*websocket.Conn]string)
+var connWriteMu sync.Map
+
+func getConnMutex(conn *websocket.Conn) *sync.Mutex {
+    m, _ := connWriteMu.LoadOrStore(conn, &sync.Mutex{})
+    return m.(*sync.Mutex)
+}
+
+func safeWriteMessage(conn *websocket.Conn, messageType int, data []byte) error {
+    mu := getConnMutex(conn)
+    mu.Lock()
+    defer mu.Unlock()
+    return conn.WriteMessage(messageType, data)
+}
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
     conn, err := upgrader.Upgrade(w, r, nil)

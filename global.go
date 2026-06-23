@@ -3,10 +3,14 @@ package main
 import (
     "fmt"
     "net"
+    "sync"
 )
 
 var node *Peer
 var localIP string
+
+var tradeMu sync.Mutex
+var tradeInProgress bool
 
 var wantSticker string
 var offerSticker string

@@ -32,14 +32,14 @@ func main(){
 	
 	// Peer node
 	node = &Peer{
-		ID:          peerID,
-		StickerID:   stickerID,
-		Inventory:   map[string]int{stickerID: 28},
-		Neighbors:   make(map[string]*PeerConn),
-		KnownPeers:  []string{},
-		SeenQueries: make(map[string]time.Time),
-		SearchResults: make(map[string]*PeerConn),
-		QueryRoutes:   make(map[string]*websocket.Conn),
+		ID:                peerID,
+		StickerID:         stickerID,
+		Neighbors:         make(map[string]*PeerConn),
+		KnownPeers:        []string{},
+		SeenQueries:       make(map[string]time.Time),
+		SearchResults:     make(map[string]*PeerConn),
+		QueryRoutes:       make(map[string]*websocket.Conn),
+		QueryForwardRoute: make(map[string]*websocket.Conn),
 	}
 
 	if *peerIP != "" {
@@ -99,7 +99,9 @@ func inputLoop() {
 				fmt.Print("> ")
 				continue
 			}
+			node.mu.Lock()
 			wantSticker = parts[1]
+			node.mu.Unlock()
         	go searchWithRetry()
 		
 		case "offer":
@@ -108,7 +110,9 @@ func inputLoop() {
 				fmt.Print("> ")
 				continue
 			}
+			node.mu.Lock()
 			offerSticker = parts[1]
+			node.mu.Unlock()
 			startTradeOffer()
 		
 		case "accept":

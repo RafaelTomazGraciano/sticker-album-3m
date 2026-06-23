@@ -20,6 +20,7 @@ func sendNeighborList(conn *websocket.Conn) {
 
     msg := Message{
         Type:         "HELLO",
+        MessageID:    uuid.NewString(),
         SenderPeerID: node.ID,
         Peers:        neighbors,
     }
@@ -29,7 +30,7 @@ func sendNeighborList(conn *websocket.Conn) {
         printError("Erro ao serializar HELLO: %v", err)
         return
     }
-    conn.WriteMessage(websocket.TextMessage, data)
+    safeWriteMessage(conn, websocket.TextMessage, data)
 }
 
 func helloToNeighbors(newConn *websocket.Conn) {
@@ -37,7 +38,8 @@ func helloToNeighbors(newConn *websocket.Conn) {
     defer node.mu.RUnlock()
 
     msg := Message{
-        Type: "HELLO",
+        Type:         "HELLO",
+        MessageID:    uuid.NewString(),
         SenderPeerID: node.ID,
     }
 
@@ -49,7 +51,7 @@ func helloToNeighbors(newConn *websocket.Conn) {
 
     for _, pc := range node.Neighbors {
         if pc.Conn != newConn {
-            pc.Conn.WriteMessage(websocket.TextMessage, data)
+            safeWriteMessage(pc.Conn, websocket.TextMessage, data)
         }
     }
 }
@@ -104,6 +106,6 @@ func sendHello(conn *websocket.Conn) {
         printError("Erro ao serializar HELLO: %v", err)
         return
     }
-    conn.WriteMessage(websocket.TextMessage, data)
+    safeWriteMessage(conn, websocket.TextMessage, data)
 }
 
