@@ -1,111 +1,119 @@
 package main
 
 import (
-    "fmt"
-    "strings"
 	"encoding/json"
-    "github.com/google/uuid"
+	"fmt"
+	"strings"
+
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
 func sendNeighborList(conn *websocket.Conn) {
-    node.mu.RLock()
-    neighbors := make([]string, 0, len(node.Neighbors))
-    for _, pc := range node.Neighbors {
-        if strings.HasPrefix(pc.Addr, "ws://") {
-            neighbors = append(neighbors, pc.Addr)
-        }
-    }
-    node.mu.RUnlock()
+	node.mu.RLock()
+	neighbors := make([]string, 0, len(node.Neighbors))
+	for _, pc := range node.Neighbors {
+		if strings.HasPrefix(pc.Addr, "ws://") {
+			neighbors = append(neighbors, pc.Addr)
+		}
+	}
+	node.mu.RUnlock()
 
-    msg := Message{
-        Type:         "HELLO",
-        MessageID:    uuid.NewString(),
-        SenderPeerID: node.ID,
-        Peers:        neighbors,
-    }
+	msg := Message{
+		Type:         "HELLO",
+		MessageID:    uuid.NewString(),
+		SenderPeerID: node.ID,
+		Peers:        neighbors,
+	}
 
-    data, err := json.Marshal(msg)
-    if err != nil {
-        printError("Erro ao serializar HELLO: %v", err)
-        return
-    }
-    safeWriteMessage(conn, websocket.TextMessage, data)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		printError("Erro ao serializar HELLO: %v", err)
+		return
+	}
+	safeWriteMessage(conn, websocket.TextMessage, data)
 }
 
 func helloToNeighbors(newConn *websocket.Conn) {
-    node.mu.RLock()
-    defer node.mu.RUnlock()
+	node.mu.RLock()
+	defer node.mu.RUnlock()
 
-    msg := Message{
-        Type:         "HELLO",
-        MessageID:    uuid.NewString(),
-        SenderPeerID: node.ID,
-    }
+	msg := Message{
+		Type:         "HELLO",
+		MessageID:    uuid.NewString(),
+		SenderPeerID: node.ID,
+	}
 
-    data, err := json.Marshal(msg)
-    if err != nil {
-        printError("Erro ao serializar HELLO: %v", err)
-        return
-    }
+	data, err := json.Marshal(msg)
+	if err != nil {
+		printError("Erro ao serializar HELLO: %v", err)
+		return
+	}
 
-    for _, pc := range node.Neighbors {
-        if pc.Conn != newConn {
-            safeWriteMessage(pc.Conn, websocket.TextMessage, data)
-        }
-    }
+	for _, pc := range node.Neighbors {
+		if pc.Conn != newConn {
+			safeWriteMessage(pc.Conn, websocket.TextMessage, data)
+		}
+	}
 }
 
 func handleHello(conn *websocket.Conn, msg Message) {
-    node.mu.Lock()
+	node.mu.Lock()
 
-    connAddrMu.RLock()
-    addr := connAddr[conn]
-    connAddrMu.RUnlock()
-    _, jaConhecia := node.Neighbors[msg.SenderPeerID]
-	
-    // salva o peer que enviou o HELLO como vizinho com ID correto
-    node.Neighbors[msg.SenderPeerID] = &PeerConn{
-        PeerID: msg.SenderPeerID,
-        Conn:   conn,
-        Addr:   addr,
-    }
+	connAddrMu.RLock()
+	addr := connAddr[conn]
+	connAddrMu.RUnlock()
+	_, jaConhecia := node.Neighbors[msg.SenderPeerID]
 
-    // salva os endereços recebidos como backup
-    for _, addr := range msg.Peers {
-        if addr != fmt.Sprintf("ws://%s:8080/ws", localIP) {
-            node.KnownPeers = append(node.KnownPeers, addr)
-        }
-    }
-    node.mu.Unlock()
+	// salva o peer que enviou o HELLO como vizinho com ID correto
+	node.Neighbors[msg.SenderPeerID] = &PeerConn{
+		PeerID: msg.SenderPeerID,
+		Conn:   conn,
+		Addr:   addr,
+	}
 
-    printSystem("Peer %s registrado em %s. Backup recebido: %v", msg.SenderPeerID, addr, msg.Peers)
+	// salva os endereços recebidos como backup
+	for _, addr := range msg.Peers {
+		if !strings.Contains(addr, ":8080") {
+			addr = fmt.Sprintf("%s:8080", addr)
+		}
 
-    if !jaConhecia {
-        sendHello(conn)
-    }
+		if !strings.Contains(addr, "ws://") {
+			addr = fmt.Sprintf("ws://%s", addr)
+		}
+
+		if addr != fmt.Sprintf("ws://%s:8080/ws", localIP) {
+			node.KnownPeers = append(node.KnownPeers, addr)
+		}
+	}
+	node.mu.Unlock()
+
+	printSystem("Peer %s registrado em %s. Backup recebido: %v", msg.SenderPeerID, addr, msg.Peers)
+
+	if !jaConhecia {
+		sendHello(conn)
+	}
 }
 
 func sendHello(conn *websocket.Conn) {
-    node.mu.RLock()
-    neighbors := make([]string, 0, len(node.Neighbors))
-    for _, pc := range node.Neighbors {
-        neighbors = append(neighbors, pc.Addr)
-    }
-    node.mu.RUnlock()
+	node.mu.RLock()
+	neighbors := make([]string, 0, len(node.Neighbors))
+	for _, pc := range node.Neighbors {
+		neighbors = append(neighbors, pc.Addr)
+	}
+	node.mu.RUnlock()
 
-    msg := Message{
-        Type:         "HELLO",
-        MessageID:    uuid.NewString(),
-        SenderPeerID: node.ID,
-        Peers:        neighbors,
-    }
+	msg := Message{
+		Type:         "HELLO",
+		MessageID:    uuid.NewString(),
+		SenderPeerID: node.ID,
+		Peers:        neighbors,
+	}
 
-    data, err := json.Marshal(msg)
-    if err != nil {
-        printError("Erro ao serializar HELLO: %v", err)
-        return
-    }
-    safeWriteMessage(conn, websocket.TextMessage, data)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		printError("Erro ao serializar HELLO: %v", err)
+		return
+	}
+	safeWriteMessage(conn, websocket.TextMessage, data)
 }
-
