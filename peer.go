@@ -40,7 +40,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
     // pega o IP de quem conectou (formato "IP:porta")
     host, _, _ := net.SplitHostPort(r.RemoteAddr)
-    addr := fmt.Sprintf("ws://%s:8080/ws", host)
+    addr := fmt.Sprintf(host)
     connAddrMu.Lock()
     connAddr[conn] = addr
     connAddrMu.Unlock()

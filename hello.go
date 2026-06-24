@@ -73,9 +73,7 @@ func handleHello(conn *websocket.Conn, msg Message) {
 
     // salva os endereços recebidos como backup
     for _, addr := range msg.Peers {
-        if addr != fmt.Sprintf("ws://%s:8080/ws", localIP) {
-            node.KnownPeers = append(node.KnownPeers, addr)
-        }
+        node.KnownPeers = append(node.KnownPeers, addr)
     }
     node.mu.Unlock()
 

@@ -43,8 +43,7 @@ func main(){
 	}
 
 	if *peerIP != "" {
-		addr := fmt.Sprintf("ws://%s:8080/ws", *peerIP)
-		go connectToPeer(addr)
+		go connectToPeer(*peerIP)
 	}
 
 	initializeInventory(*idPtr)
